@@ -1,0 +1,167 @@
+{
+    "name": "file-manager",
+    "displayName": "File Manager",
+    "description": "Two-panel file manager in an editor tab, in the spirit of Total Commander and Midnight Commander.",
+    "version": "1.0.0",
+    "publisher": "AlekVolsk",
+    "author": "AlekVolsk",
+    "license": "MIT",
+    "icon": "images/fm.png",
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/AlekVolsk/vscode-file-manager.git"
+    },
+    "keywords": [
+        "file manager",
+        "commander",
+        "two panel",
+        "files"
+    ],
+    "engines": {
+        "vscode": "^1.94.0"
+    },
+    "categories": [
+        "Other"
+    ],
+    "extensionKind": [
+        "workspace"
+    ],
+    "main": "./out/extension.js",
+    "activationEvents": [
+        "onWebviewPanel:fileManager"
+    ],
+    "scripts": {
+        "build": "npx --yes @vscode/vsce package -o file-manager.vsix",
+        "check": "tsc -p out/jsconfig.json && tsc -p media/jsconfig.json"
+    },
+    "contributes": {
+        "commands": [
+            {
+                "command": "fileManager.open",
+                "title": "Open File Manager",
+                "category": "File Manager",
+                "icon": {
+                    "light": "images/fm.svg",
+                    "dark": "images/fm.svg"
+                }
+            },
+            {
+                "command": "fileManager.action",
+                "title": "File Manager Key Action",
+                "category": "File Manager"
+            }
+        ],
+        "menus": {
+            "editor/title": [
+                {
+                    "command": "fileManager.open",
+                    "group": "navigation"
+                }
+            ],
+            "commandPalette": [
+                {
+                    "command": "fileManager.action",
+                    "when": "false"
+                }
+            ]
+        },
+        "keybindings": [
+            {
+                "key": "f1",
+                "command": "fileManager.action",
+                "args": "help",
+                "when": "activeWebviewPanelId == 'fileManager'"
+            },
+            {
+                "key": "f2",
+                "command": "fileManager.action",
+                "args": "rename",
+                "when": "activeWebviewPanelId == 'fileManager'"
+            },
+            {
+                "key": "f3",
+                "command": "fileManager.action",
+                "args": "properties",
+                "when": "activeWebviewPanelId == 'fileManager'"
+            },
+            {
+                "key": "f4",
+                "command": "fileManager.action",
+                "args": "edit",
+                "when": "activeWebviewPanelId == 'fileManager'"
+            },
+            {
+                "key": "shift+f4",
+                "command": "fileManager.action",
+                "args": "newFile",
+                "when": "activeWebviewPanelId == 'fileManager'"
+            },
+            {
+                "key": "f5",
+                "command": "fileManager.action",
+                "args": "copy",
+                "when": "activeWebviewPanelId == 'fileManager'"
+            },
+            {
+                "key": "f6",
+                "command": "fileManager.action",
+                "args": "move",
+                "when": "activeWebviewPanelId == 'fileManager'"
+            },
+            {
+                "key": "f7",
+                "command": "fileManager.action",
+                "args": "newFolder",
+                "when": "activeWebviewPanelId == 'fileManager'"
+            },
+            {
+                "key": "f8",
+                "command": "fileManager.action",
+                "args": "delete",
+                "when": "activeWebviewPanelId == 'fileManager'"
+            },
+            {
+                "key": "shift+f8",
+                "command": "fileManager.action",
+                "args": "deletePermanently",
+                "when": "activeWebviewPanelId == 'fileManager'"
+            },
+            {
+                "key": "f9",
+                "command": "fileManager.action",
+                "args": "attributes",
+                "when": "activeWebviewPanelId == 'fileManager'"
+            },
+            {
+                "key": "alt+f5",
+                "command": "fileManager.action",
+                "args": "pack",
+                "when": "activeWebviewPanelId == 'fileManager'"
+            },
+            {
+                "key": "alt+f9",
+                "command": "fileManager.action",
+                "args": "unpack",
+                "when": "activeWebviewPanelId == 'fileManager'"
+            },
+            {
+                "key": "f10",
+                "command": "fileManager.action",
+                "args": "close",
+                "when": "activeWebviewPanelId == 'fileManager'"
+            }
+        ]
+    },
+    "dependencies": {
+        "tar": "^7.5.22",
+        "yauzl": "^3.4.0",
+        "yazl": "^3.3.1"
+    },
+    "devDependencies": {
+        "@types/node": "^20.19.43",
+        "@types/vscode": "1.94.0",
+        "@types/yauzl": "^3.4.0",
+        "@types/yazl": "^3.3.1",
+        "typescript": "^7.0.2"
+    }
+}
