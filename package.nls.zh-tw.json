@@ -1,0 +1,17 @@
+{
+    "command.category": "File Manager",
+    "command.open": "開啟 File Manager",
+    "command.action": "File Manager 按鍵動作",
+    "config.title": "File Manager",
+    "config.language": "檔案管理員的語言。`auto` 跟隨 VS Code 的語言；若沒有該語言的翻譯，則使用英文。",
+    "config.customTranslations": "自訂翻譯: 索引鍵與文字和延伸模組的 `i18n/en.json` 相同。非空白時會取代 `#fileManager.language#`；缺少的索引鍵以英文顯示。",
+    "config.startFolder": "在新的檔案管理員索引標籤中兩個面板開啟的資料夾。視窗重新載入後還原的索引標籤會開啟各自的資料夾。",
+    "config.startFolder.last": "此工作區中最後開啟的資料夾；第一次為專案資料夾",
+    "config.startFolder.home": "主資料夾",
+    "config.startFolder.project": "工作區的第一個資料夾；沒有時為主資料夾",
+    "config.startFolder.root": "根目錄，在 Windows 上為磁碟機清單",
+    "config.tableScale": "表格中在編輯器字型大小上增加的像素。在檔案管理員上按 Ctrl+滑鼠滾輪可變更。",
+    "config.hideExtensionOnRename": "重新命名對話方塊會顯示不含副檔名的名稱，副檔名保持不變。",
+    "config.unpackIntoSubfolder": "解壓縮到以封存檔命名的子資料夾，除非在對話方塊中變更。",
+    "config.packFormat": "壓縮時預設提供的封存檔格式。"
+}

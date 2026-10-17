@@ -1,0 +1,17 @@
+{
+    "command.category": "File Manager",
+    "command.open": "Otwórz File Manager",
+    "command.action": "Akcja klawisza File Manager",
+    "config.title": "File Manager",
+    "config.language": "Język menedżera plików. `auto` oznacza język VS Code; jeśli nie ma dla niego tłumaczenia, używany jest angielski.",
+    "config.customTranslations": "Własne tłumaczenie: klucze i teksty jak w `i18n/en.json` rozszerzenia. Jeśli nie jest puste, zastępuje `#fileManager.language#`; brakujące klucze są wyświetlane po angielsku.",
+    "config.startFolder": "Folder, który oba panele otwierają w nowej karcie menedżera plików. Karta przywrócona po ponownym załadowaniu okna otwiera własne foldery.",
+    "config.startFolder.last": "Foldery ostatnio otwarte w tym obszarze roboczym; za pierwszym razem folder projektu",
+    "config.startFolder.home": "Folder domowy",
+    "config.startFolder.project": "Pierwszy folder obszaru roboczego; folder domowy, gdy go nie ma",
+    "config.startFolder.root": "Katalog główny lub lista dysków w systemie Windows",
+    "config.tableScale": "Piksele dodawane do rozmiaru czcionki edytora w tabelach. Zmienia się go Ctrl+kółkiem myszy nad menedżerem plików.",
+    "config.hideExtensionOnRename": "Okno zmiany nazwy pokazuje nazwę bez rozszerzenia, które pozostaje bez zmian.",
+    "config.unpackIntoSubfolder": "Rozpakowuj do podfolderu o nazwie archiwum, chyba że zmieniono to w oknie dialogowym.",
+    "config.packFormat": "Format archiwum proponowany przy pakowaniu."
+}

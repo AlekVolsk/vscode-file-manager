@@ -1,0 +1,17 @@
+{
+    "command.category": "File Manager",
+    "command.open": "Otevřít File Manager",
+    "command.action": "Akce klávesy File Manager",
+    "config.title": "File Manager",
+    "config.language": "Jazyk správce souborů. `auto` se řídí jazykem VS Code; pokud pro něj překlad není, použije se angličtina.",
+    "config.customTranslations": "Vlastní překlad: klíče a texty jako v `i18n/en.json` rozšíření. Pokud není prázdný, použije se místo `#fileManager.language#`; chybějící klíče se zobrazí anglicky.",
+    "config.startFolder": "Složka, kterou oba panely otevřou na nové kartě správce souborů. Karta obnovená po opětovném načtení okna otevře své vlastní složky.",
+    "config.startFolder.last": "Složky naposledy otevřené v tomto pracovním prostoru; poprvé složka projektu",
+    "config.startFolder.home": "Domovská složka",
+    "config.startFolder.project": "První složka pracovního prostoru; domovská složka, pokud žádná není",
+    "config.startFolder.root": "Kořen, ve Windows seznam jednotek",
+    "config.tableScale": "Pixely přidané k velikosti písma editoru v tabulkách. Mění se pomocí Ctrl+kolečko myši nad správcem souborů.",
+    "config.hideExtensionOnRename": "Dialog přejmenování zobrazí název bez přípony, která zůstane zachována.",
+    "config.unpackIntoSubfolder": "Rozbalit do podsložky s názvem archivu, pokud se v dialogu nezmění.",
+    "config.packFormat": "Formát archivu nabízený při balení."
+}

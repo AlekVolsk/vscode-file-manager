@@ -17,6 +17,7 @@ const { NameValidator } = require('./nameValidator');
 const { PropertiesReader } = require('./propertiesReader');
 const { OperationAborted } = require('./operationAborted');
 const { RetryPrompt } = require('./retryPrompt');
+const { I18n } = require('./i18n');
 
 /** @typedef {import('./panelSession').Side} Side */
 /** @typedef {import('./panelSession').PanelSession} PanelSession */
@@ -224,7 +225,7 @@ class OperationHost {
         if (newName.toLowerCase() !== oldName.toLowerCase()) {
             const taken = await fs.promises.lstat(target).then(() => true, () => false);
             if (taken) {
-                throw new Error(`"${newName}" already exists.`);
+                throw new Error(I18n.t('error.exists', { name: newName }));
             }
         }
         try {
@@ -261,7 +262,7 @@ class OperationHost {
             onProgress: (progress) => this.#reportProgress({ kind: move ? 'move' : 'copy', ...progress }),
             cancellation,
         });
-        this.#runInBackground(move ? 'Move' : 'Copy', cancellation, () => operation.run());
+        this.#runInBackground(I18n.t(move ? 'operation.move' : 'operation.copy'), cancellation, () => operation.run());
         return {};
     }
 
@@ -275,7 +276,7 @@ class OperationHost {
         const names = OperationHost.#requireEntryNames(message.names);
         const toTrash = message.permanent !== true;
         if (toTrash && !DeleteOperation.trashAvailable) {
-            throw new Error('There is no trash here; deleting would be permanent.');
+            throw new Error(I18n.t('error.noTrash'));
         }
         const cancellation = { cancelled: false };
         const operation = new DeleteOperation({
@@ -285,7 +286,7 @@ class OperationHost {
             onProgress: (progress) => this.#reportProgress({ kind: 'delete', ...progress }),
             cancellation,
         });
-        this.#runInBackground('Delete', cancellation, () => operation.run());
+        this.#runInBackground(I18n.t('operation.delete'), cancellation, () => operation.run());
         return {};
     }
 
@@ -312,7 +313,7 @@ class OperationHost {
             onProgress: (progress) => this.#reportProgress({ kind: 'attributes', ...progress }),
             cancellation,
         });
-        this.#runInBackground('Attributes', cancellation, () => operation.run());
+        this.#runInBackground(I18n.t('operation.attributes'), cancellation, () => operation.run());
         return {};
     }
 
@@ -328,11 +329,11 @@ class OperationHost {
         const destination = path.resolve(dir, String(message.destination ?? '').trim());
         const destinationStats = await fs.promises.stat(destination).catch(() => null);
         if (destinationStats && !destinationStats.isDirectory()) {
-            throw new Error(`${destination} is a file, not a folder.`);
+            throw new Error(I18n.t('error.notFolder', { path: destination }));
         }
         await fs.promises.mkdir(destination, { recursive: true });
         const cancellation = { cancelled: false };
-        this.#runInBackground('Unpack', cancellation, async () => {
+        this.#runInBackground(I18n.t('operation.unpack'), cancellation, async () => {
             const total = OperationHost.#emptySummary();
             for (const name of names) {
                 const target = message.intoSubfolder === true
@@ -368,21 +369,21 @@ class OperationHost {
         const names = OperationHost.#requireEntryNames(message.names);
         const format = message.format;
         if (format !== 'zip' && format !== 'tgz' && format !== 'tar') {
-            throw new Error('Unknown archive format.');
+            throw new Error(I18n.t('error.unknownFormat'));
         }
         const target = path.resolve(dir, String(message.target ?? '').trim());
         OperationHost.#requireValidName(path.basename(target));
         const parentStats = await fs.promises.stat(path.dirname(target)).catch(() => null);
         if (!parentStats?.isDirectory()) {
-            throw new Error(`Folder ${path.dirname(target)} does not exist.`);
+            throw new Error(I18n.t('error.folderMissing', { path: path.dirname(target) }));
         }
         if (await fs.promises.lstat(target).then(() => true, () => false)) {
-            throw new Error(`${path.basename(target)} already exists.`);
+            throw new Error(I18n.t('error.exists', { name: path.basename(target) }));
         }
         for (const name of names) {
             const inside = path.relative(path.join(dir, name), target);
             if (!inside.startsWith('..') && !path.isAbsolute(inside)) {
-                throw new Error(`The archive cannot be created inside ${name}, which it packs.`);
+                throw new Error(I18n.t('error.packInsideItself', { name }));
             }
         }
         const cancellation = { cancelled: false };
@@ -394,7 +395,7 @@ class OperationHost {
             onProgress: (progress) => this.#reportProgress({ kind: 'pack', ...progress }),
             cancellation,
         });
-        this.#runInBackground('Pack', cancellation, () => packer.run());
+        this.#runInBackground(I18n.t('operation.pack'), cancellation, () => packer.run());
         return { focusName: path.basename(target) };
     }
 
@@ -408,7 +409,7 @@ class OperationHost {
         const dir = this.#folderOf(message.side);
         const names = OperationHost.#requireArchiveNames(message.names);
         const cancellation = { cancelled: false };
-        this.#runInBackground('Test', cancellation, async () => {
+        this.#runInBackground(I18n.t('operation.test'), cancellation, async () => {
             const summary = OperationHost.#emptySummary();
             /** @type {import('./archiveTester').ArchiveProblem[]} */
             const problems = [];
@@ -453,7 +454,7 @@ class OperationHost {
         const entryNames = OperationHost.#requireEntryNames(names);
         const notArchive = entryNames.find((name) => ArchiveCatalog.formatOf(name) === null);
         if (notArchive !== undefined) {
-            throw new Error(`${notArchive} is not a zip, tar or tar.gz archive.`);
+            throw new Error(I18n.t('error.notArchive', { name: notArchive }));
         }
         return entryNames;
     }
@@ -487,7 +488,7 @@ class OperationHost {
         if (typeof set !== 'number' || typeof clear !== 'number'
             || !Number.isInteger(set) || !Number.isInteger(clear)
             || (set & ~allowedBits) !== 0 || (clear & ~allowedBits) !== 0 || (set & clear) !== 0) {
-            throw new Error('Invalid attribute change.');
+            throw new Error(I18n.t('error.invalidAttributes'));
         }
         return { set, clear };
     }
@@ -546,7 +547,7 @@ class OperationHost {
 
     #requireIdle() {
         if (this.#running) {
-            throw new Error('Another operation is still running.');
+            throw new Error(I18n.t('error.busy'));
         }
     }
 
@@ -562,15 +563,15 @@ class OperationHost {
      */
     #folderOf(side) {
         if (side !== 'left' && side !== 'right') {
-            throw new Error('Unknown panel.');
+            throw new Error(I18n.t('error.unknownPanel'));
         }
         const session = this.#sessions()[side];
         if (session.isInArchive) {
-            throw new Error('Archives are only looked into here; unpack the archive to change its content.');
+            throw new Error(I18n.t('error.archiveReadOnly'));
         }
         const dir = session.path;
         if (dir === null || dir === '') {
-            throw new Error('Nothing can be done in the drive list.');
+            throw new Error(I18n.t('error.driveList'));
         }
         return dir;
     }
@@ -592,7 +593,7 @@ class OperationHost {
      */
     static #requireEntryName(name) {
         if (typeof name !== 'string' || name === '' || name === '.' || name === '..' || /[\\/]/.test(name)) {
-            throw new Error('Invalid entry name.');
+            throw new Error(I18n.t('error.invalidEntry'));
         }
         return name;
     }
@@ -603,7 +604,7 @@ class OperationHost {
      */
     static #requireEntryNames(names) {
         if (!Array.isArray(names) || names.length === 0) {
-            throw new Error('Nothing is selected.');
+            throw new Error(I18n.t('error.nothingSelected'));
         }
         return names.map((name) => OperationHost.#requireEntryName(name));
     }
@@ -616,10 +617,10 @@ class OperationHost {
     static #explain(error, name) {
         switch (Common.errorCode(error)) {
             case 'EEXIST':
-                return new Error(`"${name}" already exists.`);
+                return new Error(I18n.t('error.exists', { name }));
             case 'EACCES':
             case 'EPERM':
-                return new Error(`Permission denied: ${Common.errorMessage(error)}`);
+                return new Error(I18n.t('error.permission', { details: Common.errorMessage(error) }));
             default:
                 return error instanceof Error ? error : new Error(String(error));
         }

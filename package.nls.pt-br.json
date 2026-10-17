@@ -1,0 +1,17 @@
+{
+    "command.category": "File Manager",
+    "command.open": "Abrir o File Manager",
+    "command.action": "Ação de tecla do File Manager",
+    "config.title": "File Manager",
+    "config.language": "Idioma do gerenciador de arquivos. `auto` segue o idioma do VS Code; sem tradução para ele, é usado o inglês.",
+    "config.customTranslations": "Sua própria tradução: chaves e textos como em `i18n/en.json` da extensão. Quando não está vazia, é usada no lugar de `#fileManager.language#`; as chaves ausentes aparecem em inglês.",
+    "config.startFolder": "Pasta que os dois painéis abrem em uma nova guia do gerenciador de arquivos. Uma guia restaurada após recarregar a janela reabre as próprias pastas.",
+    "config.startFolder.last": "As últimas pastas abertas neste espaço de trabalho; na primeira vez, a pasta do projeto",
+    "config.startFolder.home": "A pasta pessoal",
+    "config.startFolder.project": "A primeira pasta do espaço de trabalho; a pasta pessoal quando não houver",
+    "config.startFolder.root": "A raiz, ou a lista de unidades no Windows",
+    "config.tableScale": "Pixels somados ao tamanho da fonte do editor nas tabelas. Ctrl+roda do mouse sobre o gerenciador de arquivos o altera.",
+    "config.hideExtensionOnRename": "A caixa de diálogo de renomear mostra o nome sem a extensão, que é mantida.",
+    "config.unpackIntoSubfolder": "Extrair em uma subpasta com o nome do arquivo compactado, a menos que seja alterado na caixa de diálogo.",
+    "config.packFormat": "Formato de arquivo compactado oferecido ao compactar."
+}

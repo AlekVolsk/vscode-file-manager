@@ -7,6 +7,7 @@ const { Common } = require('./common');
 const { Crc32 } = require('./crc32');
 const { OperationAborted } = require('./operationAborted');
 const { TarReader } = require('./tarReader');
+const { I18n } = require('./i18n');
 
 /**
  * @typedef {object} ArchiveProblem
@@ -84,7 +85,7 @@ class ArchiveTester {
             const startDone = this.#progress.done;
             try {
                 if (entry.isEncrypted()) {
-                    throw new Error('encrypted; cannot be checked without the password');
+                    throw new Error(I18n.t('error.encryptedTest'));
                 }
                 const crc = new Crc32();
                 for await (const chunk of await zipFile.openReadStreamPromise(entry)) {
@@ -94,7 +95,7 @@ class ArchiveTester {
                     this.#report();
                 }
                 if (crc.value !== entry.crc32 >>> 0) {
-                    throw new Error('CRC-32 mismatch');
+                    throw new Error(I18n.t('error.crcMismatch'));
                 }
             } catch (error) {
                 if (error instanceof OperationAborted) {

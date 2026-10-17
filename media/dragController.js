@@ -59,7 +59,7 @@ class DragController {
             startX: event.clientX,
             startY: event.clientY,
             dragging: false,
-            copy: event.ctrlKey,
+            copy: Keys.command(event),
             ghost: null,
             target: null,
         };
@@ -91,7 +91,7 @@ class DragController {
             document.body.appendChild(state.ghost);
             document.body.classList.add('drag-active');
         }
-        state.copy = event.ctrlKey;
+        state.copy = Keys.command(event);
         const ghost = /** @type {HTMLElement} */ (state.ghost);
         ghost.style.left = `${event.clientX + 14}px`;
         ghost.style.top = `${event.clientY + 10}px`;
@@ -122,7 +122,7 @@ class DragController {
         event.preventDefault();
         event.stopPropagation();
         const target = state.target;
-        const copy = event.ctrlKey;
+        const copy = Keys.command(event);
         this.#cleanup();
         if (target) {
             this.#onDrop(state.side, state.names, target, !copy);
@@ -155,9 +155,11 @@ class DragController {
         if (!state?.ghost) {
             return;
         }
-        const verb = state.copy ? 'Copy' : 'Move';
-        const what = state.names.length === 1 ? state.names[0] : `${state.names.length} items`;
-        const where = state.target ? ` → ${state.target.folderName ?? 'this folder'}` : '';
+        const verb = I18n.t(state.copy ? 'drag.copy' : 'drag.move');
+        const what = state.names.length === 1
+            ? state.names[0]
+            : I18n.t('common.selected', { count: state.names.length });
+        const where = state.target ? ` → ${state.target.folderName ?? I18n.t('drag.thisFolder')}` : '';
         state.ghost.textContent = `${verb} ${what}${where}`;
         state.ghost.classList.toggle('copy', state.copy);
     }

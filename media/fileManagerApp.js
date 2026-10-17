@@ -4,11 +4,17 @@
 /**
  * @typedef {object} AppViewState
  * @property {number} ratio  share of the left panel
- * @property {number} fontSizeDelta  px added to the editor font size in the tables
- * @property {boolean} hideExtension  in the rename dialog
  * @property {'left' | 'right'} active
  * @property {{ left?: Partial<PanelViewState>, right?: Partial<PanelViewState> }} panels
  * @property {{ left: string | null, right: string | null }} [paths]  folders of this tab, restored after a reload
+ */
+
+/**
+ * @typedef {object} Settings  the `fileManager.*` settings of VS Code the webview uses
+ * @property {number} tableScale
+ * @property {boolean} hideExtensionOnRename
+ * @property {boolean} unpackIntoSubfolder
+ * @property {'zip' | 'tgz' | 'tar'} packFormat
  */
 
 /**
@@ -18,6 +24,8 @@ class FileManagerApp {
     static #MIN_RATIO = 0.15;
     static #MAX_RATIO = 0.85;
     static #SAVE_DELAY_MS = 300;
+    /** settings.json is written once the wheel stops, not on every step */
+    static #SCALE_SAVE_DELAY_MS = 500;
     static #OPERATION_ACTIONS = new Set([
         'rename',
         'properties',
@@ -45,8 +53,10 @@ class FileManagerApp {
     /** @type {'left' | 'right'} */
     #active = 'left';
     #ratio = FileManagerApp.#EQUAL_RATIO;
-    #fontSizeDelta = 0;
-    #hideExtension = true;
+    /** @type {Settings} */
+    #settings = { tableScale: 0, hideExtensionOnRename: true, unpackIntoSubfolder: false, packFormat: 'zip' };
+    /** @type {ReturnType<typeof setTimeout> | null} */
+    #scaleSaveTimer = null;
     /** @type {'win' | 'linux' | 'mac'} */
     #platformKind = 'linux';
     /** @type {DialogView} */
@@ -81,11 +91,8 @@ class FileManagerApp {
             post: (message) => this.#api.postMessage(message),
             panel: (side) => /** @type {{ left: PanelView, right: PanelView }} */ (this.#panels)[side],
             platformKind: () => this.#platformKind,
-            hideExtension: () => this.#hideExtension,
-            setHideExtension: (hide) => {
-                this.#hideExtension = hide;
-                this.#scheduleSave();
-            },
+            settings: () => this.#settings,
+            updateSetting: (key, value) => this.#updateSetting(key, value),
         }, this.#dialogs, document.body);
     }
 
@@ -103,6 +110,9 @@ class FileManagerApp {
      */
     #onMessage(message) {
         if (message?.type === 'init') {
+            Keys.setPlatform(message.platform.kind);
+            I18n.set(message.strings ?? {});
+            this.#settings = { ...this.#settings, ...message.settings };
             this.#operations.setTrashAvailable(message.capabilities?.trash === true);
             this.#init(message.platform, message.viewState ?? this.#api.getState());
             this.#panels?.left.setRevealAvailable(message.capabilities?.revealInOs === true);
@@ -113,6 +123,11 @@ class FileManagerApp {
             return;
         }
         if (this.#operations.handleMessage(message)) {
+            return;
+        }
+        if (message?.type === 'settings') {
+            this.#settings = { ...this.#settings, ...message.settings };
+            this.#applyFontSize();
             return;
         }
         if (message?.type === 'workspaceFolders' && this.#panels) {
@@ -191,11 +206,7 @@ class FileManagerApp {
             this.#ratio = Math.min(FileManagerApp.#MAX_RATIO, Math.max(FileManagerApp.#MIN_RATIO, viewState.ratio));
         }
         this.#applyRatio();
-        this.#hideExtension = viewState?.hideExtension !== false;
         this.#platformKind = platform.kind;
-        if (typeof viewState?.fontSizeDelta === 'number') {
-            this.#fontSizeDelta = viewState.fontSizeDelta;
-        }
         this.#applyFontSize();
         this.#bindSplitter(/** @type {HTMLElement} */ (this.#root.querySelector('.splitter')));
         this.#activate(viewState?.active === 'right' ? 'right' : 'left');
@@ -221,12 +232,13 @@ class FileManagerApp {
             operation: (action, modifiers) => this.#operations.run(action, place.side, modifiers),
             beginDrag: (names, event) => this.#drag.begin(place.side, names, event),
             revealInOs: (name) => post('revealInOs', { name }),
+            help: () => void this.#showHelp(),
             viewStateChanged: () => this.#scheduleSave(),
         };
     }
 
     /**
-     * Ctrl+U: the panels trade places with everything in them; the active side stays where it was.
+     * Ctrl+U (⌘U on macOS): the panels trade places with everything in them; the active side stays where it was.
      * The host swaps first and answers with panelsSwapped, which ends up in #onPanelsSwapped.
      */
     #requestSwap() {
@@ -251,13 +263,7 @@ class FileManagerApp {
         }
         const panel = this.#panels[this.#active];
         if (action === 'help') {
-            await this.#dialogs.show({
-                title: 'File Manager — keys and mouse',
-                body: HelpView.element(),
-                buttons: [{ action: 'close', label: 'Close', primary: true }],
-                cancelAction: 'close',
-            });
-            panel.focus();
+            await this.#showHelp();
         } else if (action === 'edit') {
             panel.openCursorFileInEditor();
         } else if (action === 'deletePermanently') {
@@ -310,7 +316,7 @@ class FileManagerApp {
         if (target.closest('input, select, textarea')) {
             return;
         }
-        if (event.code === 'KeyU' && event.ctrlKey && !event.shiftKey && !event.altKey && !event.metaKey) {
+        if (event.code === 'KeyU' && Keys.command(event) && !event.shiftKey && !event.altKey && !Keys.unused(event)) {
             event.preventDefault();
             this.#requestSwap();
             return;
@@ -371,12 +377,36 @@ class FileManagerApp {
         splitter.addEventListener('pointercancel', finish);
     }
 
+    async #showHelp() {
+        if (this.#dialogs.isOpen) {
+            return;
+        }
+        await this.#dialogs.show({
+            title: I18n.t('dialog.help'),
+            body: HelpView.element(),
+            buttons: [{ action: 'close', label: I18n.t('button.close'), primary: true }],
+            cancelAction: 'close',
+        });
+        this.#panels?.[this.#active].focus();
+    }
+
     /**
-     * Ctrl+wheel scales the tables, one pixel of font size per step, as it does in the editor.
+     * A choice made in the panel saved to the user settings; this window applies it at once, the others when
+     * VS Code reports the change.
+     * @param {keyof Settings} key
+     * @param {unknown} value
+     */
+    #updateSetting(key, value) {
+        this.#settings = { ...this.#settings, [key]: value };
+        this.#api.postMessage({ type: 'updateSetting', key, value });
+    }
+
+    /**
+     * Ctrl+wheel (⌘+wheel on macOS) scales the tables, one pixel of font size per step, as it does in the editor.
      * @param {WheelEvent} event
      */
     #onWheel(event) {
-        if (!this.#panels || !event.ctrlKey || event.shiftKey || event.altKey || event.metaKey) {
+        if (!this.#panels || !Keys.command(event) || event.shiftKey || event.altKey || Keys.unused(event)) {
             return;
         }
         event.preventDefault();
@@ -386,20 +416,26 @@ class FileManagerApp {
         }
         const editorFontSize = getComputedStyle(document.documentElement).getPropertyValue('--vscode-editor-font-size');
         const baseSize = parseFloat(editorFontSize) || FileManagerApp.#FALLBACK_FONT_SIZE;
-        const next = this.#fontSizeDelta + (delta < 0 ? 1 : -1);
+        const next = this.#settings.tableScale + (delta < 0 ? 1 : -1);
         const size = baseSize + next;
         if (size < FileManagerApp.#MIN_FONT_SIZE || size > FileManagerApp.#MAX_FONT_SIZE) {
             return;
         }
-        this.#fontSizeDelta = next;
+        this.#settings = { ...this.#settings, tableScale: next };
         this.#applyFontSize();
-        this.#scheduleSave();
+        if (this.#scaleSaveTimer) {
+            clearTimeout(this.#scaleSaveTimer);
+        }
+        this.#scaleSaveTimer = setTimeout(() => {
+            this.#scaleSaveTimer = null;
+            this.#updateSetting('tableScale', this.#settings.tableScale);
+        }, FileManagerApp.#SCALE_SAVE_DELAY_MS);
     }
 
     #applyFontSize() {
         document.documentElement.style.setProperty(
             '--table-font-size',
-            `calc(var(--vscode-editor-font-size) + ${this.#fontSizeDelta}px)`,
+            `calc(var(--vscode-editor-font-size) + ${this.#settings.tableScale}px)`,
         );
         this.#panels?.left.updateScale();
         this.#panels?.right.updateScale();
@@ -437,8 +473,6 @@ class FileManagerApp {
             /** @type {AppViewState} */
             const state = {
                 ratio: this.#ratio,
-                fontSizeDelta: this.#fontSizeDelta,
-                hideExtension: this.#hideExtension,
                 active: this.#active,
                 panels: { left: this.#panels.left.viewState, right: this.#panels.right.viewState },
                 paths: { left: this.#panels.left.path, right: this.#panels.right.path },

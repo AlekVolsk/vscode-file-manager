@@ -5,48 +5,51 @@
  * The content of the F1 dialog: keys, mouse, drag and drop, toolbar buttons.
  */
 class HelpView {
+    /** key names as they are on the keyboard, and what they do */
     static #KEYS = [
-        ['Tab', 'Other panel'],
-        ['↑ ↓ PgUp PgDn Home End', 'Move the cursor'],
-        ['Enter, double-click', 'Open a folder or an archive; a file opens in an editor tab'],
-        ['Backspace', 'Parent folder'],
-        ['Insert', 'Select or unselect, cursor down'],
-        ['Space', 'Select or unselect; on a folder, count its size'],
-        ['Alt+Shift+Enter', 'Count the size of every folder'],
-        ['Esc', 'Stop counting'],
-        ['Ctrl+U', 'Swap the panels'],
-        ['Ctrl+wheel', 'Scale the tables'],
-        ['F1', 'This help'],
-        ['F2', 'Rename'],
-        ['F3', 'Properties'],
-        ['F4', 'Open the file in an editor tab, even an archive'],
-        ['Shift+F4', 'New file'],
-        ['F5', 'Copy to the other panel'],
-        ['F6', 'Move to the other panel'],
-        ['F7', 'New folder'],
-        ['F8, Delete', 'Delete (to the trash where there is one)'],
-        ['Shift+F8, Shift+Delete', 'Delete permanently'],
-        ['F9', 'Attributes'],
-        ['Alt+F5', 'Pack into an archive'],
-        ['Alt+F9', 'Unpack archives'],
-        ['F10', 'Close this tab'],
+        ['Tab', 'help.key.tab'],
+        ['↑ ↓ PgUp PgDn Home End', 'help.key.move'],
+        ['Enter', 'help.key.enter'],
+        ['Backspace', 'help.key.backspace'],
+        ['Insert', 'help.key.insert'],
+        ['Space', 'help.key.space'],
+        ['Alt+Shift+Enter', 'help.key.countAll'],
+        ['Esc', 'help.key.esc'],
+        ['Ctrl+U', 'help.key.swap'],
+        ['Ctrl+wheel', 'help.key.scale'],
+        ['F1', 'help.key.f1'],
+        ['F2', 'help.key.f2'],
+        ['F3', 'help.key.f3'],
+        ['F4', 'help.key.f4'],
+        ['Shift+F4', 'help.key.shiftF4'],
+        ['F5', 'help.key.f5'],
+        ['F6', 'help.key.f6'],
+        ['F7', 'help.key.f7'],
+        ['F8, Delete', 'help.key.f8'],
+        ['Shift+F8, Shift+Delete', 'help.key.shiftF8'],
+        ['F9', 'help.key.f9'],
+        ['Alt+F5', 'help.key.altF5'],
+        ['Alt+F9', 'help.key.altF9'],
+        ['F10', 'help.key.f10'],
     ];
 
+    /** both columns translated: "<key>.keys" names the gesture */
     static #MOUSE = [
-        ['Click on the icon, Ctrl+click', 'Select or unselect one entry'],
-        ['Shift+click', 'Select a range; with Ctrl, add it'],
-        ['Click on a row', 'Cursor there; clears the selection'],
-        ['Click on a part of the path', 'Go to that folder'],
-        ['Click after the path', 'Type a path'],
-        ['Drag a column divider', 'Resize the column; double-click: automatic width'],
-        ['Double-click the panel divider', 'Equal halves'],
+        'help.mouse.icon',
+        'help.mouse.range',
+        'help.mouse.row',
+        'help.mouse.double',
+        'help.mouse.crumb',
+        'help.mouse.typePath',
+        'help.mouse.column',
+        'help.mouse.splitter',
     ];
 
     static #DRAG = [
-        ['Drag to the other panel', 'Move; hold Ctrl at the drop to copy'],
-        ['Drop on a folder row', 'Into that folder'],
-        ['Drop anywhere else', 'Into the folder the panel shows'],
-        ['Esc while dragging', 'Cancel'],
+        'help.drag.panel',
+        'help.drag.folder',
+        'help.drag.elsewhere',
+        'help.drag.esc',
     ];
 
     /**
@@ -55,10 +58,11 @@ class HelpView {
     static element() {
         const root = document.createElement('div');
         root.className = 'help';
+        const gestures = (/** @type {string[]} */ keys) => keys.map((key) => [I18n.t(`${key}.keys`), I18n.t(key)]);
         root.append(
-            HelpView.#section('Keys', HelpView.#KEYS),
-            HelpView.#section('Mouse', HelpView.#MOUSE),
-            HelpView.#section('Drag and drop', HelpView.#DRAG),
+            HelpView.#section(I18n.t('help.keys'), HelpView.#KEYS.map(([key, meaning]) => [key, I18n.t(meaning)])),
+            HelpView.#section(I18n.t('help.mouse'), gestures(HelpView.#MOUSE)),
+            HelpView.#section(I18n.t('help.drag'), gestures(HelpView.#DRAG)),
             HelpView.#toolbarSection(),
         );
         return root;
@@ -79,7 +83,7 @@ class HelpView {
         for (const [key, meaning] of rows) {
             const keyCell = document.createElement('div');
             keyCell.className = 'help-key';
-            keyCell.textContent = key;
+            keyCell.textContent = Keys.label(key);
             const meaningCell = document.createElement('div');
             meaningCell.textContent = meaning;
             table.append(keyCell, meaningCell);
@@ -93,36 +97,38 @@ class HelpView {
      */
     static #toolbarSection() {
         const buttons = [
-            [SvgIcons.PARENT, 'Parent folder'],
-            [SvgIcons.HOME, 'Home folder'],
-            [SvgIcons.PROJECT, 'Project folder; a list when the workspace has several'],
-            [SvgIcons.ROOT, 'Root, or the drive list on Windows'],
-            [SvgIcons.REVEAL, 'Open this folder in the system file manager'],
-            [SvgIcons.HIDDEN, 'Show or hide hidden files'],
-            [SvgIcons.NEW_FOLDER, 'New folder'],
-            [SvgIcons.NEW_FILE, 'New file'],
-            [SvgIcons.RENAME, 'Rename'],
-            [SvgIcons.COPY, 'Copy to the other panel'],
-            [SvgIcons.MOVE, 'Move to the other panel'],
-            [SvgIcons.PROPERTIES, 'Properties'],
-            [SvgIcons.ATTRIBUTES, 'Attributes'],
-            [SvgIcons.PACK, 'Pack into an archive'],
-            [SvgIcons.UNPACK, 'Unpack archives'],
-            [SvgIcons.TEST, 'Test archives without unpacking'],
-            [SvgIcons.DELETE, 'Delete; with Shift, permanently'],
+            [SvgIcons.PARENT, 'help.key.backspace'],
+            [SvgIcons.HOME, 'toolbar.home'],
+            [SvgIcons.PROJECT, 'help.toolbar.project'],
+            [SvgIcons.ROOT, 'help.toolbar.root'],
+            [SvgIcons.REVEAL, 'toolbar.reveal'],
+            [SvgIcons.HIDDEN, 'help.toolbar.hidden'],
+            [SvgIcons.NEW_FOLDER, 'toolbar.newFolder'],
+            [SvgIcons.NEW_FILE, 'toolbar.newFile'],
+            [SvgIcons.RENAME, 'toolbar.rename'],
+            [SvgIcons.COPY, 'toolbar.copy'],
+            [SvgIcons.MOVE, 'toolbar.move'],
+            [SvgIcons.PROPERTIES, 'toolbar.properties'],
+            [SvgIcons.ATTRIBUTES, 'toolbar.attributes'],
+            [SvgIcons.PACK, 'toolbar.pack'],
+            [SvgIcons.UNPACK, 'toolbar.unpack'],
+            [SvgIcons.TEST, 'help.toolbar.test'],
+            [SvgIcons.DELETE, 'help.toolbar.delete'],
+            [SvgIcons.HELP, 'help.toolbar.help'],
+            [SvgIcons.MORE, 'toolbar.more'],
         ];
         const section = document.createElement('section');
         const heading = document.createElement('div');
         heading.className = 'help-heading';
-        heading.textContent = 'Toolbar';
+        heading.textContent = I18n.t('help.toolbar');
         const table = document.createElement('div');
         table.className = 'help-table';
-        for (const [icon, meaning] of buttons) {
+        for (const [icon, meaningKey] of buttons) {
             const iconCell = document.createElement('div');
             iconCell.className = 'help-icon';
             iconCell.innerHTML = icon;
             const meaningCell = document.createElement('div');
-            meaningCell.textContent = meaning;
+            meaningCell.textContent = I18n.t(meaningKey);
             table.append(iconCell, meaningCell);
         }
         section.append(heading, table);

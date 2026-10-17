@@ -1,0 +1,17 @@
+{
+    "command.category": "File Manager",
+    "command.open": "File Manager を開く",
+    "command.action": "File Manager のキー操作",
+    "config.title": "File Manager",
+    "config.language": "ファイル マネージャーの言語。`auto` は VS Code の言語に従い、その翻訳がなければ英語を使います。",
+    "config.customTranslations": "独自の翻訳: キーとテキストは拡張機能の `i18n/en.json` と同じ形式。空でなければ `#fileManager.language#` の代わりに使われ、不足しているキーは英語で表示されます。",
+    "config.startFolder": "新しいファイル マネージャー タブで両方のパネルが開くフォルダー。ウィンドウの再読み込み後に復元されたタブは、それぞれのフォルダーを開きます。",
+    "config.startFolder.last": "このワークスペースで最後に開いていたフォルダー (初回はプロジェクト フォルダー)",
+    "config.startFolder.home": "ホーム フォルダー",
+    "config.startFolder.project": "ワークスペースの最初のフォルダー (ない場合はホーム フォルダー)",
+    "config.startFolder.root": "ルート (Windows ではドライブの一覧)",
+    "config.tableScale": "表でエディターのフォント サイズに加えるピクセル数。ファイル マネージャー上で Ctrl+マウス ホイールにより変更できます。",
+    "config.hideExtensionOnRename": "名前の変更ダイアログで拡張子を除いた名前を表示します。拡張子はそのまま残ります。",
+    "config.unpackIntoSubfolder": "ダイアログで変更しない限り、アーカイブ名のサブフォルダーに展開します。",
+    "config.packFormat": "圧縮時に提示するアーカイブ形式。"
+}

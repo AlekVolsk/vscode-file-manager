@@ -25,16 +25,16 @@ class ProgressView {
     static #COUNTED_TWICE = new Set(['copy', 'move', 'pack']);
     /** 16 MB = 16 × 1024 × 1024, counted twice: copy and check */
     static #CURRENT_BAR_MIN_BYTES = 33_554_432;
-    static #PHASE_LABELS = new Map([
-        ['scanning', 'Counting'],
-        ['copying', 'Copying'],
-        ['verifying', 'Verifying'],
-        ['moving', 'Moving'],
-        ['deleting', 'Deleting'],
-        ['applying', 'Applying'],
-        ['unpacking', 'Unpacking'],
-        ['packing', 'Packing'],
-        ['testing', 'Testing'],
+    static #PHASES = new Set([
+        'scanning',
+        'copying',
+        'verifying',
+        'moving',
+        'deleting',
+        'applying',
+        'unpacking',
+        'packing',
+        'testing',
     ]);
 
     #root;
@@ -99,8 +99,9 @@ class ProgressView {
 <div class="progress-bar current"><div class="progress-fill"></div></div>
 <div class="progress-bar total"><div class="progress-fill"></div></div>
 <div class="progress-counts"></div>
-<div class="progress-actions"><button type="button" class="dialog-button">Cancel</button></div>`;
+<div class="progress-actions"><button type="button" class="dialog-button"></button></div>`;
         const cancel = /** @type {HTMLButtonElement} */ (box.querySelector('button'));
+        cancel.textContent = I18n.t('button.cancel');
         cancel.addEventListener('click', () => this.#onCancel());
         this.#root.appendChild(box);
         this.#box = box;
@@ -112,7 +113,8 @@ class ProgressView {
             return;
         }
         const progress = this.#last;
-        const phase = progress?.phase ? ProgressView.#PHASE_LABELS.get(progress.phase) ?? '' : '';
+        const knownPhase = progress?.phase !== undefined && ProgressView.#PHASES.has(progress.phase);
+        const phase = knownPhase ? I18n.t(`phase.${progress?.phase}`) : '';
         this.#text(box, '.progress-title', phase ? `${this.#title} — ${phase}` : this.#title);
         this.#text(box, '.progress-name', progress?.currentName ?? '');
         const currentBar = /** @type {HTMLElement} */ (box.querySelector('.progress-bar.current'));
@@ -139,18 +141,21 @@ class ProgressView {
         const divisor = ProgressView.#COUNTED_TWICE.has(progress.kind) ? 2 : 1;
         if (progress.phase === 'scanning') {
             const bytes = progress.total ? `, ${Format.size(Math.round(progress.total / divisor), 'units')}` : '';
-            return `Found ${progress.totalFiles} items${bytes}`;
+            return `${I18n.t('progress.found', { count: progress.totalFiles })}${bytes}`;
         }
         this.#transferStartedAt ??= Date.now();
-        const files = `${progress.doneFiles} of ${progress.totalFiles} items`;
+        const files = I18n.t('progress.items', { done: progress.doneFiles, total: progress.totalFiles });
         if (progress.total === undefined || progress.total === 0) {
             return files;
         }
         const seconds = (Date.now() - this.#transferStartedAt) / 1000;
         const transferred = Math.round((progress.done ?? 0) / divisor);
-        const speed = seconds > 0 ? `, ${Format.size(Math.round(transferred / seconds), 'units')}/s` : '';
+        const speed = seconds > 0
+            ? `, ${I18n.t('progress.speed', { speed: Format.size(Math.round(transferred / seconds), 'units') })}`
+            : '';
         const total = Format.size(Math.round(progress.total / divisor), 'units');
-        return `${files}, ${Format.size(transferred, 'units')} of ${total}${speed}`;
+        const bytes = I18n.t('progress.bytes', { done: Format.size(transferred, 'units'), total });
+        return `${files}, ${bytes}${speed}`;
     }
 
     /**

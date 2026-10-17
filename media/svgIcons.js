@@ -25,8 +25,18 @@ class SvgIcons {
     static UNPACK = SvgIcons.#svg('M2.5 5.5h11v8h-11zM2.5 5.5l1.5-3h8l1.5 3M8 11V7M6.5 8.5L8 7l1.5 1.5');
     static TEST = SvgIcons.#svg('M2.5 5.5h11v8h-11zM2.5 5.5l1.5-3h8l1.5 3M5.5 9.5l2 2 3-3.5');
     static DELETE = SvgIcons.#svg('M2.5 4.5h11M6.3 4.5V2.8h3.4v1.7M4 4.5l.8 9h6.4l.8-9');
+    static HELP = '<svg class="svg-icon" viewBox="0 0 16 16" aria-hidden="true">'
+        + '<rect x="1.5" y="2.5" width="13" height="11" rx="2" fill="none" stroke="currentColor" stroke-width="1.2"/>'
+        + '<text x="8" y="10.8" text-anchor="middle" font-size="6.5" font-weight="700" font-family="sans-serif"'
+        + ' fill="currentColor">F1</text></svg>';
+    static MORE = '<svg class="svg-icon" viewBox="0 0 16 16" aria-hidden="true">'
+        + '<circle cx="3.5" cy="8" r="1.3" fill="currentColor"/><circle cx="8" cy="8" r="1.3" fill="currentColor"/>'
+        + '<circle cx="12.5" cy="8" r="1.3" fill="currentColor"/></svg>';
     static HIDDEN = SvgIcons.#svg(
         'M1 8s2.5-4.5 7-4.5S15 8 15 8s-2.5 4.5-7 4.5S1 8 1 8zM8 6a2 2 0 1 1 0 4 2 2 0 0 1 0-4z',
+    );
+    static HIDDEN_OFF = SvgIcons.#svg(
+        'M1 8s2.5-4.5 7-4.5S15 8 15 8s-2.5 4.5-7 4.5S1 8 1 8zM8 6a2 2 0 1 1 0 4 2 2 0 0 1 0-4zM2.5 2.5l11 11',
     );
 
     /**

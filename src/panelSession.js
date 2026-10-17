@@ -10,6 +10,7 @@ const { DirectoryWatcher } = require('./directoryWatcher');
 const { FolderSizeCounter } = require('./folderSizeCounter');
 const { MountTable } = require('./mountTable');
 const { Platform } = require('./platform');
+const { I18n } = require('./i18n');
 
 /** @typedef {'left' | 'right'} Side */
 
@@ -171,12 +172,13 @@ class PanelSession {
         const stamp = `${stats.size}:${stats.mtimeMs}`;
         let listing = this.#archive?.file === file && this.#archive.stamp === stamp ? this.#archive.listing : null;
         if (!listing) {
-            this.#post({ type: 'notice', side: this.#side, message: `Reading ${path.basename(file)}…` });
+            const message = I18n.t('notice.readingArchive', { name: path.basename(file) });
+            this.#post({ type: 'notice', side: this.#side, message });
             listing = await ArchiveCatalog.read(file, { cancelled: false });
         }
         const entries = listing.entriesOf(inner);
         if (!entries) {
-            throw new Error(`There is no ${inner.join('/')} in ${path.basename(file)}.`);
+            throw new Error(I18n.t('error.notInArchive', { path: inner.join('/'), archive: path.basename(file) }));
         }
         if (navigation !== this.#navigation) {
             return;

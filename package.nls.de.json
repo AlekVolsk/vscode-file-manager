@@ -1,0 +1,17 @@
+{
+    "command.category": "File Manager",
+    "command.open": "File Manager öffnen",
+    "command.action": "Tastenaktion von File Manager",
+    "config.title": "File Manager",
+    "config.language": "Sprache des Dateimanagers. `auto` folgt der Sprache von VS Code; gibt es dafür keine Übersetzung, wird Englisch verwendet.",
+    "config.customTranslations": "Eigene Übersetzung: Schlüssel und Texte wie in `i18n/en.json` der Erweiterung. Wenn nicht leer, wird sie statt `#fileManager.language#` verwendet; fehlende Schlüssel erscheinen auf Englisch.",
+    "config.startFolder": "Ordner, den beide Fenster in einem neuen Dateimanager-Tab öffnen. Ein nach dem Neuladen des Fensters wiederhergestellter Tab öffnet seine eigenen Ordner.",
+    "config.startFolder.last": "Die zuletzt in diesem Arbeitsbereich geöffneten Ordner; beim ersten Mal der Projektordner",
+    "config.startFolder.home": "Der Benutzerordner",
+    "config.startFolder.project": "Der erste Ordner des Arbeitsbereichs; der Benutzerordner, wenn es keinen gibt",
+    "config.startFolder.root": "Das Stammverzeichnis, unter Windows die Laufwerksliste",
+    "config.tableScale": "Pixel, die in den Tabellen zur Schriftgröße des Editors addiert werden. Strg+Mausrad über dem Dateimanager ändert den Wert.",
+    "config.hideExtensionOnRename": "Der Umbenennen-Dialog zeigt den Namen ohne Erweiterung, die unverändert bleibt.",
+    "config.unpackIntoSubfolder": "In einen Unterordner mit dem Namen des Archivs entpacken, sofern im Dialog nicht geändert.",
+    "config.packFormat": "Beim Packen angebotenes Archivformat."
+}

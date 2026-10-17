@@ -2,10 +2,10 @@
     "name": "file-manager",
     "displayName": "File Manager",
     "description": "Two-panel file manager in an editor tab, in the spirit of Total Commander and Midnight Commander.",
-    "version": "1.0.0",
+    "version": "1.1.0",
     "publisher": "AlekVolsk",
     "author": "AlekVolsk",
-    "license": "MIT",
+    "license": "BSD-3-Clause",
     "icon": "images/fm.png",
     "repository": {
         "type": "git",
@@ -26,20 +26,20 @@
     "extensionKind": [
         "workspace"
     ],
-    "main": "./out/extension.js",
+    "main": "./src/extension.js",
     "activationEvents": [
         "onWebviewPanel:fileManager"
     ],
     "scripts": {
         "build": "npx --yes @vscode/vsce package -o file-manager.vsix",
-        "check": "tsc -p out/jsconfig.json && tsc -p media/jsconfig.json"
+        "check": "tsc -p src/jsconfig.json && tsc -p media/jsconfig.json"
     },
     "contributes": {
         "commands": [
             {
                 "command": "fileManager.open",
-                "title": "Open File Manager",
-                "category": "File Manager",
+                "title": "%command.open%",
+                "category": "%command.category%",
                 "icon": {
                     "light": "images/fm.svg",
                     "dark": "images/fm.svg"
@@ -47,10 +47,113 @@
             },
             {
                 "command": "fileManager.action",
-                "title": "File Manager Key Action",
-                "category": "File Manager"
+                "title": "%command.action%",
+                "category": "%command.category%"
             }
         ],
+        "configuration": {
+            "title": "%config.title%",
+            "properties": {
+                "fileManager.language": {
+                    "type": "string",
+                    "scope": "application",
+                    "enum": [
+                        "auto",
+                        "en",
+                        "cs",
+                        "de",
+                        "es",
+                        "fr",
+                        "it",
+                        "ja",
+                        "ko",
+                        "pl",
+                        "pt-br",
+                        "ru",
+                        "tr",
+                        "zh-cn",
+                        "zh-tw"
+                    ],
+                    "enumItemLabels": [
+                        "auto",
+                        "English",
+                        "Čeština",
+                        "Deutsch",
+                        "Español",
+                        "Français",
+                        "Italiano",
+                        "日本語",
+                        "한국어",
+                        "Polski",
+                        "Português (Brasil)",
+                        "Русский",
+                        "Türkçe",
+                        "简体中文",
+                        "繁體中文"
+                    ],
+                    "default": "auto",
+                    "markdownDescription": "%config.language%"
+                },
+                "fileManager.customTranslations": {
+                    "type": "object",
+                    "scope": "application",
+                    "additionalProperties": {
+                        "type": "string"
+                    },
+                    "default": {},
+                    "markdownDescription": "%config.customTranslations%"
+                },
+                "fileManager.startFolder": {
+                    "type": "string",
+                    "enum": [
+                        "last",
+                        "home",
+                        "project",
+                        "root"
+                    ],
+                    "enumDescriptions": [
+                        "%config.startFolder.last%",
+                        "%config.startFolder.home%",
+                        "%config.startFolder.project%",
+                        "%config.startFolder.root%"
+                    ],
+                    "default": "last",
+                    "markdownDescription": "%config.startFolder%"
+                },
+                "fileManager.tableScale": {
+                    "type": "integer",
+                    "default": 0,
+                    "minimum": -10,
+                    "maximum": 30,
+                    "markdownDescription": "%config.tableScale%"
+                },
+                "fileManager.hideExtensionOnRename": {
+                    "type": "boolean",
+                    "default": true,
+                    "markdownDescription": "%config.hideExtensionOnRename%"
+                },
+                "fileManager.unpackIntoSubfolder": {
+                    "type": "boolean",
+                    "default": false,
+                    "markdownDescription": "%config.unpackIntoSubfolder%"
+                },
+                "fileManager.packFormat": {
+                    "type": "string",
+                    "enum": [
+                        "zip",
+                        "tgz",
+                        "tar"
+                    ],
+                    "enumItemLabels": [
+                        "zip",
+                        "tar.gz",
+                        "tar"
+                    ],
+                    "default": "zip",
+                    "markdownDescription": "%config.packFormat%"
+                }
+            }
+        },
         "menus": {
             "editor/title": [
                 {

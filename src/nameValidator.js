@@ -2,6 +2,7 @@
 'use strict';
 
 const { Platform } = require('./platform');
+const { I18n } = require('./i18n');
 
 /** @typedef {'windows' | 'mac' | 'posix'} NameRules */
 
@@ -33,20 +34,20 @@ class NameValidator {
      */
     static problemOf(name, rules = NameValidator.rules) {
         if (name.trim() === '') {
-            return 'The name is empty.';
+            return I18n.t('error.nameEmpty');
         }
         if (name === '.' || name === '..') {
-            return `"${name}" cannot be used as a name.`;
+            return I18n.t('error.nameDots', { name });
         }
         if (rules === 'windows') {
             return NameValidator.#windowsProblemOf(name);
         }
         const forbidden = rules === 'mac' ? NameValidator.#MAC_FORBIDDEN : NameValidator.#POSIX_FORBIDDEN;
         if (forbidden.test(name)) {
-            return rules === 'mac' ? 'A name cannot contain / or :.' : 'A name cannot contain /.';
+            return I18n.t(rules === 'mac' ? 'error.nameSlashMac' : 'error.nameSlash');
         }
         if (Buffer.byteLength(name, 'utf8') > NameValidator.#MAX_NAME_LENGTH) {
-            return `A name cannot be longer than ${NameValidator.#MAX_NAME_LENGTH} bytes.`;
+            return I18n.t('error.nameTooLongBytes', { max: NameValidator.#MAX_NAME_LENGTH });
         }
         return null;
     }
@@ -57,16 +58,16 @@ class NameValidator {
      */
     static #windowsProblemOf(name) {
         if (NameValidator.#WINDOWS_FORBIDDEN.test(name)) {
-            return 'A name cannot contain < > : " / \\ | ? * or control characters.';
+            return I18n.t('error.nameWindowsChars');
         }
         if (NameValidator.#WINDOWS_RESERVED.test(name)) {
-            return `"${name}" is a reserved device name in Windows.`;
+            return I18n.t('error.nameReserved', { name });
         }
         if (/[. ]$/.test(name)) {
-            return 'A name cannot end with a dot or a space in Windows.';
+            return I18n.t('error.nameTrailing');
         }
         if (name.length > NameValidator.#MAX_NAME_LENGTH) {
-            return `A name cannot be longer than ${NameValidator.#MAX_NAME_LENGTH} characters.`;
+            return I18n.t('error.nameTooLong', { max: NameValidator.#MAX_NAME_LENGTH });
         }
         return null;
     }

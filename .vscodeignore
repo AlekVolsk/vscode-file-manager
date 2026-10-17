@@ -3,3 +3,8 @@
 tools/**
 **/jsconfig.json
 package-lock.json
+node_modules/**/dist/esm/**
+**/*.map
+**/*.d.ts
+**/*.d.mts
+**/*.d.cts

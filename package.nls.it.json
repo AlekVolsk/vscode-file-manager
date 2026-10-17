@@ -1,0 +1,17 @@
+{
+    "command.category": "File Manager",
+    "command.open": "Apri File Manager",
+    "command.action": "Azione da tastiera di File Manager",
+    "config.title": "File Manager",
+    "config.language": "Lingua del file manager. `auto` segue la lingua di VS Code; senza una traduzione per essa, si usa l’inglese.",
+    "config.customTranslations": "Una traduzione propria: chiavi e testi come in `i18n/en.json` dell’estensione. Se non è vuota, si usa al posto di `#fileManager.language#`; le chiavi mancanti appaiono in inglese.",
+    "config.startFolder": "Cartella aperta da entrambi i pannelli in una nuova scheda del file manager. Una scheda ripristinata dopo il ricaricamento della finestra riapre le proprie cartelle.",
+    "config.startFolder.last": "Le ultime cartelle aperte in quest’area di lavoro; la prima volta, la cartella del progetto",
+    "config.startFolder.home": "La cartella home",
+    "config.startFolder.project": "La prima cartella dell’area di lavoro; la cartella home se non ce n’è",
+    "config.startFolder.root": "La radice, o l’elenco delle unità su Windows",
+    "config.tableScale": "Pixel aggiunti alla dimensione del carattere dell’editor nelle tabelle. Ctrl+rotellina del mouse sul file manager la modifica.",
+    "config.hideExtensionOnRename": "La finestra di ridenominazione mostra il nome senza estensione, che resta invariata.",
+    "config.unpackIntoSubfolder": "Estrai in una sottocartella con il nome dell’archivio, se non modificato nella finestra di dialogo.",
+    "config.packFormat": "Formato di archivio proposto durante la compressione."
+}

@@ -7,6 +7,7 @@ const { Common } = require('./common');
 const { FileHasher } = require('./fileHasher');
 const { OperationAborted } = require('./operationAborted');
 const { Platform } = require('./platform');
+const { I18n } = require('./i18n');
 
 /**
  * @typedef {object} CopyItem
@@ -122,7 +123,7 @@ class CopyOperation {
             items = names.map((name) => ({ source: path.join(sourceDir, name), target: path.join(resolved, name) }));
         } else if (destinationStats) {
             if (names.length > 1) {
-                throw new Error(`${resolved} is a file; several items can only go into a folder.`);
+                throw new Error(I18n.t('error.severalIntoFile', { path: resolved }));
             }
             items = [{ source: path.join(sourceDir, names[0]), target: resolved }];
         } else if (names.length === 1) {
@@ -132,7 +133,7 @@ class CopyOperation {
             }
             const parentStats = await fs.promises.stat(path.dirname(resolved)).catch(() => null);
             if (!parentStats?.isDirectory()) {
-                throw new Error(`Folder ${path.dirname(resolved)} does not exist.`);
+                throw new Error(I18n.t('error.folderMissing', { path: path.dirname(resolved) }));
             }
             items = [{ source: path.join(sourceDir, names[0]), target: resolved }];
         } else {
@@ -142,7 +143,7 @@ class CopyOperation {
         for (const item of items) {
             const inside = path.relative(item.source, item.target);
             if (inside !== '' && !inside.startsWith('..') && !path.isAbsolute(inside)) {
-                throw new Error(`Cannot put ${path.basename(item.source)} inside itself.`);
+                throw new Error(I18n.t('error.intoItself', { name: path.basename(item.source) }));
             }
         }
         return items;
@@ -298,7 +299,7 @@ class CopyOperation {
         }
         const copied = await this.#guard(name, async () => {
             if (!stats.isFile() && !stats.isSymbolicLink()) {
-                throw new Error(`${name} is not a regular file, folder or link.`);
+                throw new Error(I18n.t('error.notRegular', { name }));
             }
             if (resolution.existingIsLink) {
                 await fs.promises.unlink(finalTarget);
@@ -440,7 +441,7 @@ class CopyOperation {
             this.#progress.phase = 'verifying';
             const targetHash = await this.#hashFile(target);
             if (sourceHash !== targetHash) {
-                throw new Error(`The copy of ${name} differs from the original (${FileHasher.algorithm} mismatch).`);
+                throw new Error(I18n.t('error.copyMismatch', { name, algorithm: FileHasher.algorithm }));
             }
         } catch (error) {
             this.#progress.done = startDone;

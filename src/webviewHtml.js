@@ -6,6 +6,8 @@ const { Common } = require('./common');
 
 class WebviewHtml {
     static #SCRIPTS = [
+        'keys.js',
+        'i18n.js',
         'format.js',
         'svgIcons.js',
         'iconResolver.js',
@@ -16,6 +18,7 @@ class WebviewHtml {
         'progressView.js',
         'operationsController.js',
         'dragController.js',
+        'toolbarView.js',
         'panelView.js',
         'fileManagerApp.js',
         'main.js',

@@ -1,0 +1,17 @@
+{
+    "command.category": "File Manager",
+    "command.open": "打开 File Manager",
+    "command.action": "File Manager 按键操作",
+    "config.title": "File Manager",
+    "config.language": "文件管理器的语言。`auto` 跟随 VS Code 的语言；若没有该语言的翻译，则使用英语。",
+    "config.customTranslations": "自定义翻译: 键和文本与扩展的 `i18n/en.json` 相同。非空时将代替 `#fileManager.language#`；缺少的键以英语显示。",
+    "config.startFolder": "在新的文件管理器标签页中两个面板打开的文件夹。窗口重新加载后恢复的标签页会打开各自的文件夹。",
+    "config.startFolder.last": "此工作区中最后打开的文件夹；首次为项目文件夹",
+    "config.startFolder.home": "主文件夹",
+    "config.startFolder.project": "工作区的第一个文件夹；没有时为主文件夹",
+    "config.startFolder.root": "根目录，在 Windows 上为驱动器列表",
+    "config.tableScale": "表格中在编辑器字号基础上增加的像素。在文件管理器上按 Ctrl+鼠标滚轮可更改。",
+    "config.hideExtensionOnRename": "重命名对话框显示不含扩展名的名称，扩展名保持不变。",
+    "config.unpackIntoSubfolder": "解压到以归档命名的子文件夹，除非在对话框中更改。",
+    "config.packFormat": "压缩时默认提供的归档格式。"
+}

@@ -10,6 +10,7 @@ const { OperationAborted } = require('./operationAborted');
 const { Platform } = require('./platform');
 const { RetryPrompt } = require('./retryPrompt');
 const { TarReader } = require('./tarReader');
+const { I18n } = require('./i18n');
 
 /** @typedef {import('./copyOperation').OperationQuestion} OperationQuestion */
 /** @typedef {import('./copyOperation').OperationAnswer} OperationAnswer */
@@ -193,14 +194,14 @@ class ArchiveExtractor {
      */
     #problemOf(entry) {
         if (entry.encrypted) {
-            return 'The entry is encrypted; password-protected archives are not supported.';
+            return I18n.t('error.encryptedUnpack');
         }
         if (entry.kind === 'other') {
-            return 'Only files, folders and links can be unpacked.';
+            return I18n.t('error.unsupportedEntry');
         }
         const segments = ArchiveExtractor.#segmentsOf(entry.name);
         if (/^([a-zA-Z]:)?[\\/]/.test(entry.name) || segments.includes('..') || segments.length === 0) {
-            return 'The path leads out of the destination folder.';
+            return I18n.t('error.pathLeaves');
         }
         for (const segment of segments) {
             const problem = this.#nameProblem(segment);
@@ -210,7 +211,7 @@ class ArchiveExtractor {
         }
         const inside = path.relative(this.#destination, path.join(this.#destination, ...segments));
         const leavesDestination = inside.startsWith('..') || path.isAbsolute(inside);
-        return leavesDestination ? 'The path leads out of the destination folder.' : null;
+        return leavesDestination ? I18n.t('error.pathLeaves') : null;
     }
 
     /**
@@ -296,7 +297,7 @@ class ArchiveExtractor {
         await output.close();
         if (entry.expectedCrc !== null && crc.value !== entry.expectedCrc >>> 0) {
             await fs.promises.unlink(target).catch(() => undefined);
-            throw new Error('The unpacked file differs from the archive (CRC-32 mismatch); the archive is damaged.');
+            throw new Error(I18n.t('error.unpackMismatch'));
         }
         await this.#preserveMetadata(target, entry);
     }
@@ -318,7 +319,7 @@ class ArchiveExtractor {
         const resolved = path.resolve(path.dirname(target), linkTarget);
         const inside = path.relative(this.#destination, resolved);
         if (path.isAbsolute(linkTarget) || inside.startsWith('..') || path.isAbsolute(inside)) {
-            throw new Error(`The link points out of the destination folder (${linkTarget}); not created.`);
+            throw new Error(I18n.t('error.linkLeaves', { target: linkTarget }));
         }
         await fs.promises.symlink(linkTarget, target);
     }

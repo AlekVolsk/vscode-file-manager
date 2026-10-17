@@ -1,0 +1,17 @@
+{
+    "command.category": "File Manager",
+    "command.open": "Open File Manager",
+    "command.action": "File Manager Key Action",
+    "config.title": "File Manager",
+    "config.language": "Language of the File Manager. `auto` follows the language of VS Code; without a translation for it, English is used.",
+    "config.customTranslations": "Your own translation: keys and texts as in `i18n/en.json` of the extension. When not empty, it is used instead of `#fileManager.language#`; keys it lacks are shown in English.",
+    "config.startFolder": "Folder both panels open in a new File Manager tab. A tab restored after a window reload reopens its own folders.",
+    "config.startFolder.last": "The folders last open in this workspace; the project folder the first time",
+    "config.startFolder.home": "The home folder",
+    "config.startFolder.project": "The first workspace folder; the home folder when there is none",
+    "config.startFolder.root": "The root, or the drive list on Windows",
+    "config.tableScale": "Pixels added to the editor font size in the tables. Ctrl+mouse wheel over the File Manager changes it.",
+    "config.hideExtensionOnRename": "The rename dialog shows the name without its extension, which stays as it was.",
+    "config.unpackIntoSubfolder": "Unpack into a subfolder named after the archive, unless changed in the dialog.",
+    "config.packFormat": "Archive format offered when packing."
+}

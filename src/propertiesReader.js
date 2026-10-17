@@ -5,6 +5,7 @@ const fs = require('fs');
 const os = require('os');
 const path = require('path');
 const { Platform } = require('./platform');
+const { I18n } = require('./i18n');
 
 /**
  * @typedef {object} EntryProperties
@@ -108,7 +109,7 @@ class PropertiesReader {
     static #ownerOf(stats) {
         const user = os.userInfo();
         const owner = stats.uid === user.uid ? `${user.username} (${stats.uid})` : String(stats.uid);
-        return `${owner}, group ${stats.gid}`;
+        return I18n.t('properties.ownerGroup', { owner, group: stats.gid });
     }
 }
 

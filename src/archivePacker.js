@@ -8,6 +8,7 @@ const tar = require('tar');
 const yazl = require('yazl');
 const { ArchiveTester } = require('./archiveTester');
 const { OperationAborted } = require('./operationAborted');
+const { I18n } = require('./i18n');
 
 /**
  * @typedef {object} PackItem
@@ -199,7 +200,7 @@ class ArchivePacker {
         const { problems } = await tester.run();
         if (problems.length > 0) {
             const first = problems[0];
-            throw new Error(`The new archive did not pass the check: ${first.name}: ${first.problem}`);
+            throw new Error(I18n.t('error.packCheckFailed', { name: first.name, problem: first.problem }));
         }
     }
 

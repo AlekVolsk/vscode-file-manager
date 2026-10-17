@@ -75,8 +75,26 @@ body {
     border-bottom: 1px solid var(--vscode-panel-border, var(--vscode-editorGroup-border));
 }
 
+.toolbar-items,
+.toolbar-end {
+    display: flex;
+    align-items: center;
+    gap: 2px;
+}
+
+.toolbar-items {
+    flex: 1 1 auto;
+    min-width: 0;
+    overflow: hidden;
+}
+
+.toolbar-end {
+    flex: none;
+}
+
 .toolbar button {
     display: inline-flex;
+    flex: none;
     align-items: center;
     justify-content: center;
     width: 24px;
@@ -93,12 +111,6 @@ body {
     background: var(--vscode-toolbar-hoverBackground);
 }
 
-.toolbar button.toggle.on {
-    background: var(--vscode-inputOption-activeBackground);
-    border-color: var(--vscode-inputOption-activeBorder, transparent);
-    color: var(--vscode-inputOption-activeForeground, inherit);
-}
-
 .toolbar button:disabled {
     opacity: 0.4;
     cursor: default;
@@ -106,6 +118,10 @@ body {
 
 .toolbar button:disabled:hover {
     background: transparent;
+}
+
+.toolbar [hidden] {
+    display: none;
 }
 
 .panel {
@@ -137,12 +153,30 @@ body {
     cursor: pointer;
 }
 
-.menu-item:hover {
+.menu-item:disabled {
+    opacity: 0.4;
+    cursor: default;
+}
+
+.menu-item:not(:disabled):hover {
     color: var(--vscode-menu-selectionForeground, inherit);
     background: var(--vscode-menu-selectionBackground, var(--vscode-list-hoverBackground));
 }
 
+.toolbar-menu .menu-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding-left: 8px;
+}
+
+.menu-icon {
+    display: inline-flex;
+    color: var(--vscode-icon-foreground, currentColor);
+}
+
 .toolbar-separator {
+    flex: none;
     width: 1px;
     height: 16px;
     margin: 0 4px;

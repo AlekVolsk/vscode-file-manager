@@ -8,7 +8,8 @@
 /**
  * @typedef {object} AttributeBit
  * @property {number} bit
- * @property {string} label
+ * @property {string} [label]     shown as it is: r, w, x, setuid
+ * @property {string} [labelKey]  translated
  */
 
 /**
@@ -25,14 +26,19 @@ class AttributesForm {
         [{ bit: 0o004, label: 'r' }, { bit: 0o002, label: 'w' }, { bit: 0o001, label: 'x' }],
         [{ bit: 0o4000, label: 'setuid' }, { bit: 0o2000, label: 'setgid' }, { bit: 0o1000, label: 'sticky' }],
     ];
-    static #POSIX_ROW_LABELS = ['Owner', 'Group', 'Others', 'Special'];
+    static #POSIX_ROW_LABELS = [
+        'attributes.owner',
+        'attributes.group',
+        'attributes.others',
+        'attributes.special',
+    ];
     static #POSIX_SPECIAL_BITS = 0o7000;
     /** System.IO.FileAttributes */
     static #WINDOWS_BITS = [
-        { bit: 1, label: 'Read-only' },
-        { bit: 2, label: 'Hidden' },
-        { bit: 4, label: 'System' },
-        { bit: 32, label: 'Archive' },
+        { bit: 1, labelKey: 'attributes.readOnly' },
+        { bit: 2, labelKey: 'attributes.hidden' },
+        { bit: 4, labelKey: 'attributes.system' },
+        { bit: 32, labelKey: 'attributes.archive' },
     ];
 
     #element;
@@ -62,7 +68,7 @@ class AttributesForm {
             label.className = 'dialog-checkbox';
             this.#recursive = document.createElement('input');
             this.#recursive.type = 'checkbox';
-            label.append(this.#recursive, document.createTextNode('Also everything inside the folders'));
+            label.append(this.#recursive, document.createTextNode(I18n.t('attributes.recursive')));
             this.#element.appendChild(label);
         }
     }
@@ -110,7 +116,7 @@ class AttributesForm {
         AttributesForm.#POSIX_ROWS.forEach((row, index) => {
             const label = document.createElement('span');
             label.className = 'attributes-row-label';
-            label.textContent = AttributesForm.#POSIX_ROW_LABELS[index];
+            label.textContent = I18n.t(AttributesForm.#POSIX_ROW_LABELS[index]);
             grid.appendChild(label);
             for (const bit of row) {
                 grid.appendChild(this.#checkbox(bit, values));
@@ -120,7 +126,7 @@ class AttributesForm {
 
         const octalLabel = document.createElement('label');
         octalLabel.className = 'attributes-octal';
-        octalLabel.textContent = 'Octal ';
+        octalLabel.textContent = `${I18n.t('attributes.octal')} `;
         this.#octal = document.createElement('input');
         this.#octal.type = 'text';
         this.#octal.className = 'dialog-input';
@@ -172,7 +178,7 @@ class AttributesForm {
             AttributesForm.#showState(info);
             this.#showOctal();
         });
-        label.append(box, document.createTextNode(bit.label));
+        label.append(box, document.createTextNode(bit.labelKey ? I18n.t(bit.labelKey) : bit.label ?? ''));
         return label;
     }
 
@@ -192,7 +198,7 @@ class AttributesForm {
         for (const [bit, info] of this.#bits) {
             if (info.state === 'mixed') {
                 this.#octal.value = '';
-                this.#octal.placeholder = 'mixed';
+                this.#octal.placeholder = I18n.t('attributes.mixed');
                 return;
             }
             if (info.state === 'on') {

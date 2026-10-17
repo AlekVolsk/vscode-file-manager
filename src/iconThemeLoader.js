@@ -6,6 +6,7 @@ const path = require('path');
 const vscode = require('vscode');
 const { Common } = require('./common');
 const { Jsonc } = require('./jsonc');
+const { I18n } = require('./i18n');
 
 /**
  * @typedef {object} IconDefinition
@@ -75,7 +76,7 @@ class IconThemeLoader {
         }
         const contribution = IconThemeLoader.#findContribution(themeId);
         if (!contribution) {
-            return { theme: null, error: `Icon theme "${themeId}" is not available to this extension host` };
+            return { theme: null, error: I18n.t('error.iconThemeMissing', { theme: themeId }) };
         }
         const themeFile = path.join(contribution.extensionPath, contribution.path);
         try {
@@ -99,7 +100,8 @@ class IconThemeLoader {
                 error: null,
             };
         } catch (error) {
-            return { theme: null, error: `Icon theme "${themeId}": ${Common.errorMessage(error)}` };
+            const details = Common.errorMessage(error);
+            return { theme: null, error: I18n.t('error.iconTheme', { theme: themeId, details }) };
         }
     }
 

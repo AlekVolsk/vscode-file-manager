@@ -2,6 +2,8 @@
 
 A two-panel file manager in an editor tab, in the spirit of Total Commander and Midnight Commander: copy, move, rename, delete, attributes, properties and archives, by toolbar, keys and drag and drop.
 
+![File Manager: two panels in an editor tab](images/screen.png)
+
 ## Installation
 
 ```bash
@@ -18,7 +20,7 @@ Requires VS Code 1.94 or later. In a remote window (WSL, SSH, containers) the ex
 - The same button on a File Manager tab opens one more next to it.
 - **File Manager: Open File Manager** in the Command Palette.
 
-Both panels start in the first workspace folder, or in the home folder without one. Each tab reopens where it was left, also after a window reload.
+A new tab opens both panels in the folder chosen by the `fileManager.startFolder` setting: the folders last open in this workspace (the default), the home folder, the project folder or the root. A tab restored after a window reload reopens its own folders.
 
 ## Panels
 
@@ -26,7 +28,7 @@ Both panels start in the first workspace folder, or in the home folder without o
 - Click a column header to sort by it, again to reverse. Folders always come first.
 - Sizes are shown in KB, MB, GB with two decimals; the `KB` button in the header switches to bytes. A folder shows `<dir>` until its size is counted.
 - The extension and size columns fit their longest value in the folder. Drag a divider in the header to set a width by hand; double-click it to go back to the automatic width.
-- Ctrl+mouse wheel scales the tables, as in the editor.
+- Ctrl+mouse wheel scales the tables, as in the editor; the scale is kept in the `fileManager.tableScale` setting.
 - Drag the line between the panels to resize them; double-click it for equal halves.
 - The path above the list is clickable: a click on a part of it opens that folder, a click after it lets you type a path (relative, `~` and paths to files work).
 - The list follows changes on disk while it is open. Folders on file systems that report no changes (WSL `/mnt/c`, network shares, FUSE) are polled.
@@ -41,12 +43,15 @@ Both panels start in the first workspace folder, or in the home folder without o
 - New folder, new file, rename, copy, move, properties, attributes.
 - Pack, unpack, test archives.
 - Delete; with Shift, permanently.
+- Help (`F1`), always at the right edge.
+
+Buttons that do not fit a narrow panel go, from the end, into the `⋯` menu next to Help.
 
 An operation works on the selected entries, or on the entry under the cursor when nothing is selected. Copy and move go to the folder of the other panel.
 
 ## Keys
 
-The function keys work while a File Manager tab is active; elsewhere VS Code keeps its own.
+The function keys work while a File Manager tab is active; elsewhere VS Code keeps its own. On macOS ⌘ takes the place of Ctrl everywhere in the File Manager, including Ctrl+click and Ctrl at a drop, and the tooltips and the help write the keys with the Mac symbols: ⌘U, ⇧F8, ⌥F5.
 
 - `Tab` — other panel
 - `↑` `↓` `PgUp` `PgDn` `Home` `End` — move the cursor
@@ -89,7 +94,7 @@ Drag entries to the other panel to move them; hold Ctrl at the drop to copy. Dro
 - **Errors** on single files ask: retry, skip, skip all, abort.
 - **Progress** shows in a corner of the tab, with the current file for big files, totals, speed and Cancel; the panels stay usable.
 - **Delete** always asks. Without a trash, or with Shift, a second confirmation follows, and its button unlocks after five seconds. The trash is used where VS Code reaches one: in a local window, not in WSL or other remote windows.
-- **Rename** opens a dialog; "Hide file extension" (on by default, remembered) leaves the extension as it is.
+- **Rename** opens a dialog; "Hide file extension" (on by default, kept in the `fileManager.hideExtensionOnRename` setting) leaves the extension as it is.
 - **Names** are checked before anything is written. Under Windows and WSL the Windows rules apply: no `< > : " / \ | ? *`, no reserved names such as `CON`, no trailing dot or space.
 - **Attributes**: permission bits with an octal field on Linux and macOS, Read-only, Hidden, System and Archive on Windows. Only the bits changed in the dialog are applied, also to a selection with different attributes, and optionally to everything inside folders. Links are not changed.
 - **Properties**: type, size, dates, attributes, owner, link target. Folder content is counted while the dialog is open.
@@ -100,7 +105,33 @@ Drag entries to the other panel to move them; hold Ctrl at the drop to copy. Dro
 - **Unpack** extracts whole archives into a folder, optionally into a subfolder named after each archive. Zip files are checked against their stored CRC-32. Entries that would land outside the folder — `..`, absolute paths, links pointing out — are refused.
 - **Pack** creates a zip, tar or tar.gz and checks it afterwards; an archive that fails, is cancelled or does not pass the check is removed. Zip has no links, so links are skipped there.
 - **Test** reads archives without writing anything and lists every damaged entry.
-- Password-protected zip files are not supported.
+
+Not supported yet:
+
+- 7z and the formats 7-Zip reads (rar, arj, cab, lzh, iso, tar.bz2, tar.xz and others) — one step that covers most of the archives in use; how it is done is left for a later version;
+- working with archive contents in place: opening, copying or extracting single entries without unpacking the whole archive;
+- encrypted, password-protected archives;
+- folders protected by file system encryption (EFS on Windows, fscrypt, eCryptfs and similar).
+
+## Settings
+
+All settings are in **Settings → Extensions → File Manager** and apply to both panels of every tab. The language settings are user settings only, so a workspace cannot change them.
+
+- `fileManager.language` — language of the interface; `auto` follows VS Code.
+- `fileManager.customTranslations` — your own dictionary, see [Languages](#languages).
+- `fileManager.startFolder` — `last`, `home`, `project` or `root`: where a new tab opens.
+- `fileManager.tableScale` — pixels added to the editor font size in the tables; Ctrl+mouse wheel changes it.
+- `fileManager.hideExtensionOnRename` — the rename dialog shows the name without its extension.
+- `fileManager.unpackIntoSubfolder` — unpack into a subfolder named after the archive.
+- `fileManager.packFormat` — `zip`, `tgz` or `tar`, offered when packing.
+
+## Languages
+
+English, Čeština, Deutsch, Español, Français, Italiano, 日本語, 한국어, Polski, Português (Brasil), Русский, Türkçe, 简体中文, 繁體中文 — the languages VS Code ships language packs for. With `auto` the language of VS Code is used; without a dictionary for it, English. Command titles and setting descriptions follow the language of VS Code.
+
+*The translations were made with an AI tool and may be inaccurate. A native speaker is always welcome to send a pull request with corrections to `i18n/<language>.json` and `package.nls.<language>.json`.*
+
+For a language not in the list, put a dictionary into `fileManager.customTranslations`: the keys and texts as in [`i18n/en.json`](i18n/en.json), `{name}` placeholders kept. A non-empty dictionary is used instead of `fileManager.language`; keys it lacks are shown in English.
 
 ## Platforms
 
@@ -120,4 +151,4 @@ npm run build
 
 ## License
 
-MIT.
+BSD 3-Clause License.

@@ -19,8 +19,8 @@
  * @property {(message: Record<string, unknown>) => void} post
  * @property {(side: 'left' | 'right') => PanelView} panel
  * @property {() => 'win' | 'linux' | 'mac'} platformKind
- * @property {() => boolean} hideExtension
- * @property {(hide: boolean) => void} setHideExtension
+ * @property {() => Settings} settings
+ * @property {(key: keyof Settings, value: unknown) => void} updateSetting
  */
 
 /**
@@ -38,9 +38,6 @@ class OperationsController {
     #dialogs;
     #progress;
     #trashAvailable = false;
-    /** @type {'zip' | 'tgz' | 'tar'} */
-    #packFormat = 'zip';
-    #unpackIntoSubfolder = false;
     /** @type {{ requestId: number, view: PropertiesView } | null} */
     #openProperties = null;
     #nextRequestId = 1;
@@ -154,17 +151,17 @@ class OperationsController {
             return;
         }
         await this.#dialogs.show({
-            title: kind === 'folder' ? 'New folder' : 'New file',
+            title: I18n.t(kind === 'folder' ? 'dialog.newFolder' : 'dialog.newFile'),
             input: { value: '' },
             buttons: [
-                { action: 'create', label: 'Create', primary: true },
-                { action: 'cancel', label: 'Cancel' },
+                { action: 'create', label: I18n.t('button.create'), primary: true },
+                { action: 'cancel', label: I18n.t('button.cancel') },
             ],
             cancelAction: 'cancel',
             submit: async ({ value }) => {
                 const result = await this.#request({ type: 'createEntry', side, kind, name: value });
                 if (!result.ok) {
-                    return result.error ?? 'Failed.';
+                    return result.error ?? I18n.t('common.failed');
                 }
                 panel.focusEntry(result.focusName ?? value);
                 return null;
@@ -186,19 +183,19 @@ class OperationsController {
         }
         const { base, extension } = Format.splitName(entry.name, entry.isDir);
         const hasExtension = extension !== '';
-        const hide = hasExtension && this.#context.hideExtension();
+        const hide = hasExtension && this.#context.settings().hideExtensionOnRename;
         const fullName = (/** @type {string} */ value, /** @type {boolean} */ hidden) => (
             hidden && hasExtension ? `${value}.${extension}` : value
         );
         await this.#dialogs.show({
-            title: entry.isDir ? 'Rename folder' : 'Rename file',
+            title: I18n.t(entry.isDir ? 'dialog.renameFolder' : 'dialog.renameFile'),
             message: entry.name,
             input: { value: hide ? base : entry.name, selectionEnd: hasExtension && !hide ? base.length : undefined },
             checkbox: hasExtension ? {
-                label: 'Hide file extension',
+                label: I18n.t('rename.hideExtension'),
                 checked: hide,
                 onToggle: (checked, input) => {
-                    this.#context.setHideExtension(checked);
+                    this.#context.updateSetting('hideExtensionOnRename', checked);
                     if (!input) {
                         return;
                     }
@@ -212,15 +209,15 @@ class OperationsController {
                 },
             } : undefined,
             buttons: [
-                { action: 'rename', label: 'Rename', primary: true },
-                { action: 'cancel', label: 'Cancel' },
+                { action: 'rename', label: I18n.t('button.rename'), primary: true },
+                { action: 'cancel', label: I18n.t('button.cancel') },
             ],
             cancelAction: 'cancel',
             submit: async ({ value, checked }) => {
                 const newName = fullName(value, checked);
                 const result = await this.#request({ type: 'renameEntry', side, oldName: entry.name, newName });
                 if (!result.ok) {
-                    return result.error ?? 'Failed.';
+                    return result.error ?? I18n.t('common.failed');
                 }
                 panel.focusEntry(result.focusName ?? newName);
                 return null;
@@ -257,21 +254,23 @@ class OperationsController {
         const destination = names.length === 1 && targetDir !== ''
             ? `${targetDir.endsWith(separator) ? targetDir : targetDir + separator}${names[0]}`
             : targetDir;
-        const verb = move ? 'Move' : 'Copy';
-        const into = dropTarget?.folderName ? ` into "${dropTarget.folderName}"` : '';
-        const what = names.length === 1 ? `"${names[0]}"` : `${names.length} items`;
+        const folder = dropTarget?.folderName;
+        const title = folder
+            ? I18n.t(move ? 'dialog.moveInto' : 'dialog.copyInto', { folder })
+            : I18n.t(move ? 'dialog.moveTo' : 'dialog.copyTo');
         await this.#dialogs.show({
-            title: into ? `${verb} ${what}${into}` : `${verb} ${what} to`,
+            title,
+            message: OperationsController.#what(names),
             input: { value: destination },
             buttons: [
-                { action: 'start', label: verb, primary: true },
-                { action: 'cancel', label: 'Cancel' },
+                { action: 'start', label: I18n.t(move ? 'button.move' : 'button.copy'), primary: true },
+                { action: 'cancel', label: I18n.t('button.cancel') },
             ],
             cancelAction: 'cancel',
             submit: async ({ value }) => {
                 const result = await this.#request({ type: 'startCopy', side, names, destination: value, move });
                 if (!result.ok) {
-                    return result.error ?? 'Failed.';
+                    return result.error ?? I18n.t('common.failed');
                 }
                 this.#running = { side, names };
                 return null;
@@ -291,13 +290,13 @@ class OperationsController {
             return;
         }
         const form = new AttributesForm(entries);
-        const what = entries.length === 1 ? `"${entries[0].name}"` : `${entries.length} items`;
         await this.#dialogs.show({
-            title: `Attributes of ${what}`,
+            title: I18n.t('dialog.attributes'),
+            message: OperationsController.#what(entries.map((entry) => entry.name)),
             body: form.element,
             buttons: [
-                { action: 'apply', label: 'Apply', primary: true },
-                { action: 'cancel', label: 'Cancel' },
+                { action: 'apply', label: I18n.t('button.apply'), primary: true },
+                { action: 'cancel', label: I18n.t('button.cancel') },
             ],
             cancelAction: 'cancel',
             submit: async () => {
@@ -312,7 +311,7 @@ class OperationsController {
                     change,
                     recursive: form.recursive,
                 });
-                return result.ok ? null : result.error ?? 'Failed.';
+                return result.ok ? null : result.error ?? I18n.t('common.failed');
             },
         });
         panel.focus();
@@ -331,16 +330,16 @@ class OperationsController {
         const requestId = this.#nextRequestId++;
         const result = await this.#request({ type: 'properties', side, names }, requestId);
         if (!result.ok || !result.properties) {
-            await this.#notice('Properties', result.error ?? 'Failed.');
+            await this.#notice(I18n.t('dialog.properties'), result.error ?? I18n.t('common.failed'));
             panel.focus();
             return;
         }
         const view = new PropertiesView(result.properties);
         this.#openProperties = { requestId, view };
         await this.#dialogs.show({
-            title: names.length === 1 ? 'Properties' : `Properties of ${names.length} items`,
+            title: I18n.t('dialog.properties'),
             body: view.element,
-            buttons: [{ action: 'close', label: 'Close', primary: true }],
+            buttons: [{ action: 'close', label: I18n.t('button.close'), primary: true }],
             cancelAction: 'close',
         });
         this.#openProperties = null;
@@ -376,9 +375,9 @@ class OperationsController {
             const radio = document.createElement('input');
             radio.type = 'radio';
             radio.name = 'archive-format';
-            radio.checked = format === this.#packFormat;
+            radio.checked = format === this.#context.settings().packFormat;
             radio.addEventListener('change', () => {
-                this.#packFormat = /** @type {'zip' | 'tgz' | 'tar'} */ (format);
+                this.#context.updateSetting('packFormat', format);
                 const field = formats.closest('.dialog')?.querySelector('input.dialog-input');
                 if (field instanceof HTMLInputElement) {
                     field.value = field.value.replace(OperationsController.#ARCHIVE_NAME, '')
@@ -388,14 +387,14 @@ class OperationsController {
             option.append(radio, document.createTextNode(label));
             formats.appendChild(option);
         }
-        const what = names.length === 1 ? `"${names[0]}"` : `${names.length} items`;
         await this.#dialogs.show({
-            title: `Pack ${what} into`,
+            title: I18n.t('dialog.packInto'),
+            message: OperationsController.#what(names),
             body: formats,
-            input: { value: pathOf(this.#packFormat) },
+            input: { value: pathOf(this.#context.settings().packFormat) },
             buttons: [
-                { action: 'pack', label: 'Pack', primary: true },
-                { action: 'cancel', label: 'Cancel' },
+                { action: 'pack', label: I18n.t('button.pack'), primary: true },
+                { action: 'cancel', label: I18n.t('button.cancel') },
             ],
             cancelAction: 'cancel',
             submit: async ({ value }) => {
@@ -404,10 +403,10 @@ class OperationsController {
                     side,
                     names,
                     target: value,
-                    format: this.#packFormat,
+                    format: this.#context.settings().packFormat,
                 });
                 if (!result.ok) {
-                    return result.error ?? 'Failed.';
+                    return result.error ?? I18n.t('common.failed');
                 }
                 if (otherPanel.canOperate && result.focusName) {
                     otherPanel.focusEntry(result.focusName);
@@ -426,26 +425,26 @@ class OperationsController {
         const panel = this.#context.panel(side);
         const names = panel.operationNames.filter((name) => OperationsController.#ARCHIVE_NAME.test(name));
         if (names.length === 0) {
-            await this.#notice('Unpack', 'Choose zip, tar or tar.gz archives to unpack.');
+            await this.#notice(I18n.t('dialog.unpack'), I18n.t('unpack.chooseArchives'));
             panel.focus();
             return;
         }
         const otherPanel = this.#context.panel(side === 'left' ? 'right' : 'left');
         const destination = otherPanel.canOperate ? otherPanel.path ?? '' : panel.path ?? '';
-        const what = names.length === 1 ? `"${names[0]}"` : `${names.length} archives`;
         await this.#dialogs.show({
-            title: `Unpack ${what} to`,
+            title: I18n.t('dialog.unpackTo'),
+            message: OperationsController.#what(names),
             input: { value: destination },
             checkbox: {
-                label: 'Into a subfolder named after the archive',
-                checked: this.#unpackIntoSubfolder,
+                label: I18n.t('unpack.intoSubfolder'),
+                checked: this.#context.settings().unpackIntoSubfolder,
                 onToggle: (checked) => {
-                    this.#unpackIntoSubfolder = checked;
+                    this.#context.updateSetting('unpackIntoSubfolder', checked);
                 },
             },
             buttons: [
-                { action: 'unpack', label: 'Unpack', primary: true },
-                { action: 'cancel', label: 'Cancel' },
+                { action: 'unpack', label: I18n.t('button.unpack'), primary: true },
+                { action: 'cancel', label: I18n.t('button.cancel') },
             ],
             cancelAction: 'cancel',
             submit: async ({ value, checked }) => {
@@ -456,7 +455,7 @@ class OperationsController {
                     destination: value,
                     intoSubfolder: checked,
                 });
-                return result.ok ? null : result.error ?? 'Failed.';
+                return result.ok ? null : result.error ?? I18n.t('common.failed');
             },
         });
         panel.focus();
@@ -469,13 +468,13 @@ class OperationsController {
         const panel = this.#context.panel(side);
         const names = panel.operationNames.filter((name) => OperationsController.#ARCHIVE_NAME.test(name));
         if (names.length === 0) {
-            await this.#notice('Test', 'Choose zip, tar or tar.gz archives to test.');
+            await this.#notice(I18n.t('dialog.test'), I18n.t('test.chooseArchives'));
             panel.focus();
             return;
         }
         const result = await this.#request({ type: 'startTest', side, names });
         if (!result.ok) {
-            await this.#notice('Test', result.error ?? 'Failed.');
+            await this.#notice(I18n.t('dialog.test'), result.error ?? I18n.t('common.failed'));
         }
         panel.focus();
     }
@@ -493,14 +492,16 @@ class OperationsController {
             return;
         }
         const permanent = shiftKey || !this.#trashAvailable;
-        const what = names.length === 1 ? `"${names[0]}"` : `${names.length} items`;
+        const question = names.length === 1
+            ? I18n.t(permanent ? 'delete.permanentOne' : 'delete.trashOne', { name: names[0] })
+            : `${I18n.t(permanent ? 'delete.permanentMany' : 'delete.trashMany')} ${OperationsController.#what(names)}`;
         const first = await this.#dialogs.show({
-            title: permanent ? 'Delete' : 'Move to Trash',
-            message: permanent ? `Delete ${what}?` : `Move ${what} to the Trash?`,
+            title: I18n.t(permanent ? 'dialog.delete' : 'dialog.moveToTrash'),
+            message: question,
             lines: OperationsController.#listedNames(names),
             buttons: [
-                { action: 'delete', label: permanent ? 'Delete' : 'Move to Trash', primary: true },
-                { action: 'cancel', label: 'Cancel' },
+                { action: 'delete', label: I18n.t(permanent ? 'button.delete' : 'button.moveToTrash'), primary: true },
+                { action: 'cancel', label: I18n.t('button.cancel') },
             ],
             cancelAction: 'cancel',
         });
@@ -509,18 +510,18 @@ class OperationsController {
             return;
         }
         if (permanent) {
-            const reason = this.#trashAvailable ? '' : ' There is no trash here.';
+            const reason = this.#trashAvailable ? '' : ` ${I18n.t('delete.noTrash')}`;
             const second = await this.#dialogs.show({
-                title: 'Delete permanently',
-                message: `${what} will be deleted permanently. This cannot be undone.${reason}`,
+                title: I18n.t('dialog.deletePermanently'),
+                message: `${OperationsController.#what(names)}. ${I18n.t('delete.cannotUndo')}${reason}`,
                 buttons: [
                     {
                         action: 'delete',
-                        label: 'Delete permanently',
+                        label: I18n.t('button.deletePermanently'),
                         primary: true,
                         countdownSeconds: OperationsController.#DELETE_COUNTDOWN_SECONDS,
                     },
-                    { action: 'cancel', label: 'Cancel' },
+                    { action: 'cancel', label: I18n.t('button.cancel') },
                 ],
                 cancelAction: 'cancel',
             });
@@ -531,7 +532,7 @@ class OperationsController {
         }
         const result = await this.#request({ type: 'startDelete', side, names, permanent });
         if (!result.ok) {
-            await this.#notice('Delete', result.error ?? 'Failed.');
+            await this.#notice(I18n.t('dialog.delete'), result.error ?? I18n.t('common.failed'));
         } else {
             this.#running = { side, names };
         }
@@ -545,20 +546,20 @@ class OperationsController {
     async #answer(questionId, question) {
         if (question.kind === 'conflict') {
             const buttons = [
-                { action: 'overwrite', label: 'Overwrite', primary: true },
-                { action: 'rename', label: 'Keep both', primary: !question.canOverwrite },
-                { action: 'skip', label: 'Skip' },
-                { action: 'cancel', label: 'Cancel' },
+                { action: 'overwrite', label: I18n.t('button.overwrite'), primary: true },
+                { action: 'rename', label: I18n.t('button.keepBoth'), primary: !question.canOverwrite },
+                { action: 'skip', label: I18n.t('button.skip') },
+                { action: 'cancel', label: I18n.t('button.cancel') },
             ].filter((button) => button.action !== 'overwrite' || question.canOverwrite);
             const result = await this.#dialogs.show({
-                title: 'Name already taken',
-                message: `"${question.name}" already exists in the destination.`,
+                title: I18n.t('dialog.nameTaken'),
+                message: I18n.t('conflict.exists', { name: question.name }),
                 lines: [
-                    `Existing: ${OperationsController.#describe(question.existing)}`,
-                    `New:      ${OperationsController.#describe(question.source)}`,
-                    'Keep both gives the new one a number: name (1).ext',
+                    I18n.t('conflict.existing', { facts: OperationsController.#describe(question.existing) }),
+                    I18n.t('conflict.new', { facts: OperationsController.#describe(question.source) }),
+                    I18n.t('conflict.keepBothHint'),
                 ],
-                checkbox: { label: 'Do this for all conflicts', checked: false },
+                checkbox: { label: I18n.t('conflict.forAll'), checked: false },
                 buttons,
                 cancelAction: 'cancel',
             });
@@ -570,13 +571,13 @@ class OperationsController {
             return;
         }
         const result = await this.#dialogs.show({
-            title: 'Error',
+            title: I18n.t('dialog.error'),
             message: `${question.name}: ${question.message}`,
             buttons: [
-                { action: 'retry', label: 'Retry', primary: true },
-                { action: 'skip', label: 'Skip' },
-                { action: 'skipAll', label: 'Skip all' },
-                { action: 'abort', label: 'Abort' },
+                { action: 'retry', label: I18n.t('button.retry'), primary: true },
+                { action: 'skip', label: I18n.t('button.skip') },
+                { action: 'skipAll', label: I18n.t('button.skipAll') },
+                { action: 'abort', label: I18n.t('button.abort') },
             ],
             cancelAction: 'abort',
         });
@@ -604,20 +605,19 @@ class OperationsController {
         }
         const problems = [];
         if (summary.cancelled) {
-            problems.push('Cancelled.');
+            problems.push(I18n.t('summary.cancelled'));
         }
         if (summary.skipped > 0) {
-            problems.push(`Skipped: ${summary.skipped}.`);
+            problems.push(I18n.t('summary.skipped', { count: summary.skipped }));
         }
         if (summary.failed > 0) {
-            problems.push(`Failed: ${summary.failed}.`);
+            problems.push(I18n.t('summary.failed', { count: summary.failed }));
         }
         if (summary.metadataWarnings > 0) {
-            const count = summary.metadataWarnings;
-            problems.push(`Dates or permissions not kept on ${count} items: the file system refused them.`);
+            problems.push(I18n.t('summary.metadata', { count: summary.metadataWarnings }));
         }
         if (problems.length > 0) {
-            await this.#notice(message.title, `Done: ${summary.done}.`, problems);
+            await this.#notice(message.title, I18n.t('summary.done', { count: summary.done }), problems);
         }
     }
 
@@ -625,15 +625,16 @@ class OperationsController {
      * @param {any} summary
      */
     async #reportTest(summary) {
-        const archives = summary.tested === 1 ? 'the archive' : `${summary.tested} archives`;
+        const title = I18n.t('dialog.test');
+        const counts = { archives: summary.tested, count: summary.done, damaged: summary.problems.length };
         if (summary.cancelled) {
-            await this.#notice('Test', `Cancelled after ${summary.done} files.`);
+            await this.#notice(title, I18n.t('test.cancelled', counts));
         } else if (summary.problems.length === 0) {
-            await this.#notice('Test', `No damage found: ${summary.done} files in ${archives} read and checked.`);
+            await this.#notice(title, I18n.t('test.clean', counts));
         } else {
             await this.#notice(
-                'Test',
-                `Damage found in ${archives}: ${summary.problems.length} of ${summary.done} files.`,
+                title,
+                I18n.t('test.damaged', counts),
                 summary.problems.map((/** @type {{ name: string, problem: string }} */ problem) => (
                     `${problem.name} — ${problem.problem}`
                 )),
@@ -651,7 +652,7 @@ class OperationsController {
             title,
             message,
             lines,
-            buttons: [{ action: 'ok', label: 'OK', primary: true }],
+            buttons: [{ action: 'ok', label: I18n.t('button.ok'), primary: true }],
             cancelAction: 'ok',
         });
     }
@@ -678,7 +679,17 @@ class OperationsController {
         }
         const listed = names.slice(0, OperationsController.#LISTED_NAMES_MAX);
         const more = names.length - listed.length;
-        return more > 0 ? [...listed, `… and ${more} more`] : listed;
+        return more > 0 ? [...listed, I18n.t('common.more', { count: more })] : listed;
+    }
+
+    /**
+     * The name of a single entry, or how many are selected: a count in a sentence would need plural forms in
+     * every language.
+     * @param {string[]} names
+     * @returns {string}
+     */
+    static #what(names) {
+        return names.length === 1 ? names[0] : I18n.t('common.selected', { count: names.length });
     }
 
     /**
@@ -686,7 +697,7 @@ class OperationsController {
      * @returns {string}
      */
     static #describe(facts) {
-        const size = facts.isDir ? 'folder' : Format.size(facts.size, 'units');
+        const size = facts.isDir ? I18n.t('conflict.folder') : Format.size(facts.size, 'units');
         return `${size}, ${Format.date(facts.mtime)}`;
     }
 }

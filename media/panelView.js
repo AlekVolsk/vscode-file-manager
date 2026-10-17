@@ -84,6 +84,7 @@
  * @property {(action: OperationAction, modifiers: { shiftKey: boolean }) => void} operation
  * @property {(names: string[], event: MouseEvent) => void} beginDrag
  * @property {(cursorName: string | null) => void} revealInOs
+ * @property {() => void} help
  */
 
 /**
@@ -208,6 +209,7 @@ class PanelView {
         this.#root = document.createElement('section');
         this.#root.className = 'panel';
         this.#root.innerHTML = PanelView.#template();
+        this.#root.prepend(new ToolbarView().element);
         container.appendChild(this.#root);
 
         this.#pathInput = this.#query('.path-input');
@@ -616,7 +618,7 @@ class PanelView {
 
     /**
      * Click on the icon or Ctrl+click toggles one row and keeps the rest; Shift+click selects from the last clicked
-     * row, Ctrl+Shift+click adds that range; a plain click clears the selection.
+     * row, Ctrl+Shift+click adds that range; a plain click clears the selection. On macOS ⌘ stands for Ctrl.
      * Double click is recognised here rather than by the dblclick event: the first click re-renders the rows, and the
      * browser does not report a dblclick across two different elements.
      * @param {MouseEvent} event
@@ -632,7 +634,7 @@ class PanelView {
         }
         event.preventDefault();
         this.#viewport.focus({ preventScroll: true });
-        const toggleKey = event.ctrlKey || event.metaKey;
+        const toggleKey = Keys.command(event);
         const onSelectableIcon = target.closest('.icon') !== null && PanelView.#isSelectable(this.#rows[index]);
         if (onSelectableIcon || (toggleKey && !event.shiftKey)) {
             this.#lastRowClick = null;
@@ -742,6 +744,9 @@ class PanelView {
             case 'reveal':
                 this.#callbacks.revealInOs(this.#currentName());
                 break;
+            case 'help':
+                this.#callbacks.help();
+                return;
             case 'root':
                 this.#navigate(this.#platform.kind === 'win' ? '' : '/', null);
                 break;
@@ -778,7 +783,9 @@ class PanelView {
         this.#workspaceFolders = folders;
         const button = this.#query('[data-action="project"]');
         button.toggleAttribute('disabled', folders.length === 0);
-        button.title = folders.length === 1 ? `Project folder: ${folders[0].path}` : 'Project folders';
+        button.title = folders.length === 1
+            ? I18n.t('toolbar.projectPath', { path: folders[0].path })
+            : I18n.t('toolbar.projects');
         this.#closeMenu();
     }
 
@@ -1116,7 +1123,7 @@ class PanelView {
     #dateText(row) {
         if (row.entry?.drive) {
             const free = row.entry.drive.free;
-            return free === null ? '' : `free ${Format.size(free, 'units')}`;
+            return free === null ? '' : I18n.t('panel.free', { size: Format.size(free, 'units') });
         }
         return row.entry ? Format.date(row.entry[this.#state.dateKind]) : '';
     }
@@ -1164,7 +1171,7 @@ class PanelView {
                 }
             }
         }
-        this.#statusCounts.textContent = `Folders ${selectedFolders} / ${folders}   Files ${selectedFiles} / ${files}`;
+        this.#statusCounts.textContent = I18n.t('panel.status', { selectedFolders, folders, selectedFiles, files });
         const mode = this.#state.sizeMode;
         this.#statusSizes.textContent = `${Format.size(selectedBytes, mode)} / ${Format.size(totalBytes, mode)}`;
     }
@@ -1419,13 +1426,13 @@ class PanelView {
     }
 
     #applyStateToControls() {
-        this.#hiddenToggle.classList.toggle('on', this.#state.showHidden);
-        this.#hiddenToggle.title = this.#state.showHidden ? 'Hidden files are shown' : 'Hidden files are not shown';
+        this.#hiddenToggle.innerHTML = this.#state.showHidden ? SvgIcons.HIDDEN : SvgIcons.HIDDEN_OFF;
+        this.#hiddenToggle.title = I18n.t(this.#state.showHidden ? 'toolbar.hiddenShown' : 'toolbar.hiddenNotShown');
         this.#dateSelect.value = this.#state.dateKind;
         this.#sizeModeButton.textContent = this.#state.sizeMode === 'units' ? 'KB' : 'B';
         this.#sizeModeButton.title = this.#state.sizeMode === 'units'
-            ? 'Show sizes in bytes'
-            : 'Show sizes in KB, MB, GB';
+            ? I18n.t('size.toBytes')
+            : I18n.t('size.toUnits');
         for (const cell of this.#header.querySelectorAll('[data-sort]')) {
             const element = /** @type {HTMLElement} */ (cell);
             const sorted = element.dataset.sort === this.#state.sortKey;
@@ -1478,97 +1485,32 @@ class PanelView {
      * @returns {string}
      */
     static #template() {
+        const text = (/** @type {string} */ key) => Format.escapeHtml(I18n.t(key));
         return `
-<div class="toolbar">
-    <button
-        type="button"
-        tabindex="-1"
-        data-action="parent"
-        title="Parent folder (Backspace)"
-    >${SvgIcons.PARENT}</button>
-    <button type="button" tabindex="-1" data-action="home" title="Home folder">${SvgIcons.HOME}</button>
-    <button
-        type="button"
-        tabindex="-1"
-        data-action="project"
-        title="Project folder"
-        disabled
-    >${SvgIcons.PROJECT}</button>
-    <button type="button" tabindex="-1" data-action="root" title="Root">${SvgIcons.ROOT}</button>
-    <button
-        type="button"
-        tabindex="-1"
-        data-action="reveal"
-        title="Open this folder in the system file manager"
-        disabled
-    >${SvgIcons.REVEAL}</button>
-    <span class="toolbar-separator"></span>
-    <button type="button" tabindex="-1" data-action="hidden" class="toggle">${SvgIcons.HIDDEN}</button>
-    <span class="toolbar-separator"></span>
-    <button type="button" tabindex="-1" data-action="op" data-operation="newFolder" title="New folder">
-        ${SvgIcons.NEW_FOLDER}
-    </button>
-    <button type="button" tabindex="-1" data-action="op" data-operation="newFile" title="New file">
-        ${SvgIcons.NEW_FILE}
-    </button>
-    <button type="button" tabindex="-1" data-action="op" data-operation="rename" title="Rename">
-        ${SvgIcons.RENAME}
-    </button>
-    <button type="button" tabindex="-1" data-action="op" data-operation="copy" title="Copy to the other panel">
-        ${SvgIcons.COPY}
-    </button>
-    <button type="button" tabindex="-1" data-action="op" data-operation="move" title="Move to the other panel">
-        ${SvgIcons.MOVE}
-    </button>
-    <button type="button" tabindex="-1" data-action="op" data-operation="properties" title="Properties">
-        ${SvgIcons.PROPERTIES}
-    </button>
-    <button type="button" tabindex="-1" data-action="op" data-operation="attributes" title="Attributes">
-        ${SvgIcons.ATTRIBUTES}
-    </button>
-    <span class="toolbar-separator"></span>
-    <button type="button" tabindex="-1" data-action="op" data-operation="pack" title="Pack into an archive">
-        ${SvgIcons.PACK}
-    </button>
-    <button type="button" tabindex="-1" data-action="op" data-operation="unpack" title="Unpack archives">
-        ${SvgIcons.UNPACK}
-    </button>
-    <button type="button" tabindex="-1" data-action="op" data-operation="test" title="Test archives">
-        ${SvgIcons.TEST}
-    </button>
-    <span class="toolbar-separator"></span>
-    <button
-        type="button"
-        tabindex="-1"
-        data-action="op"
-        data-operation="delete"
-        title="Delete (Shift: permanently, past the trash)"
-    >${SvgIcons.DELETE}</button>
-</div>
 <div class="path-bar">
     <div class="breadcrumbs"></div>
     <input class="path-input" type="text" spellcheck="false" tabindex="-1">
 </div>
 <div class="list-header row-grid">
     <span class="cell col-name" data-sort="name">
-        Name<span class="column-grip" data-resizes="ext" data-direction="-1"></span>
+        ${text('column.name')}<span class="column-grip" data-resizes="ext" data-direction="-1"></span>
     </span>
     <span class="cell col-ext" data-sort="ext">
-        Ext<span class="column-grip" data-resizes="ext" data-direction="1"></span>
+        ${text('column.ext')}<span class="column-grip" data-resizes="ext" data-direction="1"></span>
     </span>
     <span class="cell col-size" data-sort="size">
-        <button type="button" tabindex="-1" class="size-mode"></button>Size
+        <button type="button" tabindex="-1" class="size-mode"></button>${text('column.size')}
         <span class="column-grip" data-resizes="size" data-direction="1"></span>
     </span>
     <span class="cell col-date" data-sort="date">
         <select class="date-kind" tabindex="-1">
-            <option value="mtime">Modified</option>
-            <option value="birthtime">Created</option>
-            <option value="atime">Accessed</option>
+            <option value="mtime">${text('date.modified')}</option>
+            <option value="birthtime">${text('date.created')}</option>
+            <option value="atime">${text('date.accessed')}</option>
         </select>
         <span class="column-grip" data-resizes="date" data-direction="1"></span>
     </span>
-    <span class="cell col-attrs" data-sort="attrs">Attr</span>
+    <span class="cell col-attrs" data-sort="attrs">${text('column.attr')}</span>
 </div>
 <div class="viewport" tabindex="0">
     <div class="spacer"></div>

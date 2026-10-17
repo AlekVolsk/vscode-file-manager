@@ -1,0 +1,17 @@
+{
+    "command.category": "File Manager",
+    "command.open": "File Manager’ı Aç",
+    "command.action": "File Manager Tuş Eylemi",
+    "config.title": "File Manager",
+    "config.language": "Dosya yöneticisinin dili. `auto`, VS Code dilini izler; o dil için çeviri yoksa İngilizce kullanılır.",
+    "config.customTranslations": "Kendi çeviriniz: anahtarlar ve metinler uzantının `i18n/en.json` dosyasındaki gibi. Boş değilse `#fileManager.language#` yerine kullanılır; eksik anahtarlar İngilizce gösterilir.",
+    "config.startFolder": "İki panelin yeni bir dosya yöneticisi sekmesinde açtığı klasör. Pencere yeniden yüklendikten sonra geri yüklenen sekme kendi klasörlerini açar.",
+    "config.startFolder.last": "Bu çalışma alanında son açılan klasörler; ilk seferde proje klasörü",
+    "config.startFolder.home": "Ana klasör",
+    "config.startFolder.project": "Çalışma alanının ilk klasörü; yoksa ana klasör",
+    "config.startFolder.root": "Kök veya Windows’ta sürücü listesi",
+    "config.tableScale": "Tablolarda düzenleyici yazı tipi boyutuna eklenen piksel. Dosya yöneticisi üzerinde Ctrl+fare tekerleği ile değişir.",
+    "config.hideExtensionOnRename": "Yeniden adlandırma iletişim kutusu adı uzantısız gösterir; uzantı olduğu gibi kalır.",
+    "config.unpackIntoSubfolder": "İletişim kutusunda değiştirilmedikçe arşivin adını taşıyan bir alt klasöre ayıkla.",
+    "config.packFormat": "Paketlerken önerilen arşiv biçimi."
+}

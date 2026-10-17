@@ -35,13 +35,13 @@
 class PropertiesView {
     /** System.IO.FileAttributes */
     static #WINDOWS_ATTRIBUTES = [
-        [1, 'Read-only'],
-        [2, 'Hidden'],
-        [4, 'System'],
-        [32, 'Archive'],
-        [1024, 'Reparse point'],
-        [2048, 'Compressed'],
-        [16384, 'Encrypted'],
+        [1, 'attributes.readOnly'],
+        [2, 'attributes.hidden'],
+        [4, 'attributes.system'],
+        [32, 'attributes.archive'],
+        [1024, 'attributes.reparsePoint'],
+        [2048, 'attributes.compressed'],
+        [16384, 'attributes.encrypted'],
     ];
 
     #element;
@@ -80,14 +80,14 @@ class PropertiesView {
      * @param {ContentCount} count
      */
     updateContent(count) {
-        const partial = count.skippedFolders > 0 ? ' (some folders could not be read)' : '';
+        const partial = count.skippedFolders > 0 ? ` ${I18n.t('properties.unreadable')}` : '';
         const pending = count.done ? '' : ' …';
         if (this.#sizeCell) {
             this.#sizeCell.textContent = PropertiesView.#sizeText(this.#fileBytes + count.bytes) + pending + partial;
         }
         if (this.#contentCell) {
-            this.#contentCell.textContent = `${Format.groupDigits(count.files)} files, `
-                + `${Format.groupDigits(count.folders)} folders${pending}${partial}`;
+            const content = { files: Format.groupDigits(count.files), folders: Format.groupDigits(count.folders) };
+            this.#contentCell.textContent = `${I18n.t('properties.content', content)}${pending}${partial}`;
         }
     }
 
@@ -95,30 +95,31 @@ class PropertiesView {
      * @param {EntryProperties} entry
      */
     #buildSingle(entry) {
-        this.#row('Name', entry.name);
-        this.#row('Location', entry.location);
-        this.#row('Type', PropertiesView.#typeText(entry));
+        this.#row('properties.name', entry.name);
+        this.#row('properties.location', entry.location);
+        this.#row('properties.type', PropertiesView.#typeText(entry));
         if (entry.kind === 'link') {
-            this.#row('Points to', `${entry.linkTarget ?? '?'}${entry.linkBroken ? ' (missing)' : ''}`);
+            const missing = entry.linkBroken ? ` ${I18n.t('properties.missing')}` : '';
+            this.#row('properties.pointsTo', `${entry.linkTarget ?? '?'}${missing}`);
         }
         if (entry.kind === 'folder') {
-            this.#sizeCell = this.#row('Size', 'counting …');
-            this.#contentCell = this.#row('Contains', 'counting …');
+            this.#sizeCell = this.#row('properties.size', I18n.t('properties.counting'));
+            this.#contentCell = this.#row('properties.contains', I18n.t('properties.counting'));
         } else if (entry.size !== null) {
-            this.#row('Size', PropertiesView.#sizeText(entry.size));
+            this.#row('properties.size', PropertiesView.#sizeText(entry.size));
         }
         const created = entry.birthtime === null
-            ? 'not kept by this file system'
+            ? I18n.t('properties.notKept')
             : PropertiesView.#time(entry.birthtime);
-        this.#row('Created', created);
-        this.#row('Modified', PropertiesView.#time(entry.mtime));
-        this.#row('Accessed', PropertiesView.#time(entry.atime));
+        this.#row('properties.created', created);
+        this.#row('properties.modified', PropertiesView.#time(entry.mtime));
+        this.#row('properties.accessed', PropertiesView.#time(entry.atime));
         if (entry.ctime !== null) {
-            this.#row('Metadata changed', PropertiesView.#time(entry.ctime));
+            this.#row('properties.metadataChanged', PropertiesView.#time(entry.ctime));
         }
-        this.#row('Attributes', PropertiesView.#attributesText(entry));
+        this.#row('properties.attributes', PropertiesView.#attributesText(entry));
         if (entry.owner !== null) {
-            this.#row('Owner', entry.owner);
+            this.#row('properties.owner', entry.owner);
         }
     }
 
@@ -126,29 +127,26 @@ class PropertiesView {
         const folders = this.#entries.filter((entry) => entry.kind === 'folder').length;
         const links = this.#entries.filter((entry) => entry.kind === 'link').length;
         const files = this.#entries.length - folders - links;
-        const parts = [`${folders} folders`, `${files} files`];
-        if (links > 0) {
-            parts.push(`${links} links`);
-        }
-        this.#row('Items', `${this.#entries.length}: ${parts.join(', ')}`);
-        this.#row('Location', this.#entries[0].location);
+        const breakdown = { total: this.#entries.length, folders, files, links };
+        this.#row('properties.items', I18n.t('properties.itemsBreakdown', breakdown));
+        this.#row('properties.location', this.#entries[0].location);
         if (this.#hasFolders) {
-            this.#sizeCell = this.#row('Size', 'counting …');
-            this.#contentCell = this.#row('Folders contain', 'counting …');
+            this.#sizeCell = this.#row('properties.size', I18n.t('properties.counting'));
+            this.#contentCell = this.#row('properties.foldersContain', I18n.t('properties.counting'));
         } else {
-            this.#row('Size', PropertiesView.#sizeText(this.#fileBytes));
+            this.#row('properties.size', PropertiesView.#sizeText(this.#fileBytes));
         }
     }
 
     /**
-     * @param {string} label
+     * @param {string} labelKey
      * @param {string} value
      * @returns {HTMLElement}  the value cell
      */
-    #row(label, value) {
+    #row(labelKey, value) {
         const name = document.createElement('div');
         name.className = 'properties-label';
-        name.textContent = label;
+        name.textContent = I18n.t(labelKey);
         const cell = document.createElement('div');
         cell.className = 'properties-value';
         cell.textContent = value;
@@ -162,17 +160,19 @@ class PropertiesView {
      */
     static #typeText(entry) {
         if (entry.kind === 'folder') {
-            return 'Folder';
+            return I18n.t('type.folder');
         }
         if (entry.kind === 'link') {
-            const target = entry.linkTargetKind === 'folder' ? 'a folder' : 'a file';
-            return entry.linkBroken ? 'Link, broken' : `Link to ${target}`;
+            if (entry.linkBroken) {
+                return I18n.t('type.linkBroken');
+            }
+            return I18n.t(entry.linkTargetKind === 'folder' ? 'type.linkToFolder' : 'type.linkToFile');
         }
         if (entry.kind === 'other') {
-            return 'Special file (device, socket or pipe)';
+            return I18n.t('type.special');
         }
         const { extension } = Format.splitName(entry.name, false);
-        return extension ? `File (.${extension})` : 'File';
+        return extension ? I18n.t('type.fileWithExtension', { extension }) : I18n.t('type.file');
     }
 
     /**
@@ -183,8 +183,8 @@ class PropertiesView {
         if (entry.winAttributes !== null) {
             const names = PropertiesView.#WINDOWS_ATTRIBUTES
                 .filter(([bit]) => ((entry.winAttributes ?? 0) & /** @type {number} */ (bit)) !== 0)
-                .map(([, label]) => label);
-            return names.length > 0 ? names.join(', ') : 'none';
+                .map(([, labelKey]) => I18n.t(/** @type {string} */ (labelKey)));
+            return names.length > 0 ? names.join(', ') : I18n.t('attributes.none');
         }
         if (entry.mode !== null) {
             return `${Format.posixAttributes(entry.mode)}  (${(entry.mode & 0o7777).toString(8).padStart(3, '0')})`;
@@ -198,7 +198,7 @@ class PropertiesView {
      */
     static #sizeText(bytes) {
         const units = Format.size(bytes, 'units');
-        return bytes < 1024 ? units : `${units} (${Format.groupDigits(bytes)} bytes)`;
+        return bytes < 1024 ? units : I18n.t('properties.bytes', { size: units, bytes: Format.groupDigits(bytes) });
     }
 
     /**

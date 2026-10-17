@@ -15,6 +15,7 @@ const { PanelSession } = require('./panelSession');
 const { Platform } = require('./platform');
 const { WebviewHtml } = require('./webviewHtml');
 const { WindowsShell } = require('./windowsShell');
+const { I18n } = require('./i18n');
 
 /** @typedef {import('./panelSession').Side} Side */
 
@@ -138,6 +139,13 @@ class FileManagerPanel {
                 if (event.affectsConfiguration('workbench.iconTheme')) {
                     void this.#sendIconTheme();
                 }
+                if (event.affectsConfiguration('fileManager.language')
+                    || event.affectsConfiguration('fileManager.customTranslations')) {
+                    I18n.load(context.extensionPath);
+                    panel.webview.html = WebviewHtml.render(panel.webview, context.extensionUri);
+                } else if (event.affectsConfiguration('fileManager')) {
+                    void panel.webview.postMessage({ type: 'settings', settings: FileManagerPanel.#settings() });
+                }
             }),
             vscode.extensions.onDidChange(() => void this.#sendIconTheme()),
             vscode.workspace.onDidChangeWorkspaceFolders(() => this.#sendWorkspaceFolders()),
@@ -190,28 +198,89 @@ class FileManagerPanel {
             case 'saveViewState':
                 await this.#context.globalState.update(Config.GLOBAL_STATE_KEY, message.state);
                 break;
+            case 'updateSetting':
+                await FileManagerPanel.#updateSetting(message.key, message.value);
+                break;
         }
     }
 
+    /**
+     * The webview started: on opening, after a window reload, or after a language change rebuilt it. The panels
+     * show what they showed before; a new tab starts where `fileManager.startFolder` says.
+     */
     async #start() {
         this.#panel.webview.postMessage({
             type: 'init',
             platform: { kind: Platform.kind, isWsl: Platform.isWsl, home: Platform.homeDirectory() },
             capabilities: { trash: DeleteOperation.trashAvailable, revealInOs: FileManagerPanel.#canRevealInOs() },
             viewState: this.#context.globalState.get(Config.GLOBAL_STATE_KEY) ?? null,
+            settings: FileManagerPanel.#settings(),
+            strings: I18n.strings,
         });
         this.#sendWorkspaceFolders();
         await this.#sendIconTheme();
-        const saved = /** @type {Partial<Record<Side, string>>} */ (
-            this.#context.workspaceState.get(Config.WORKSPACE_STATE_KEY) ?? {}
-        );
-        const projectFolder = vscode.workspace.workspaceFolders?.[0]?.uri;
-        const defaultPath = projectFolder?.scheme === 'file' ? projectFolder.fsPath : Platform.homeDirectory();
         await Promise.all((/** @type {Side[]} */ (['left', 'right'])).map((side) => {
-            const savedPath = this.#restoredPaths[side] ?? saved[side];
-            const candidates = typeof savedPath === 'string' ? [savedPath, defaultPath] : [defaultPath];
-            return this.#sessions[side].navigateToFirstReadable(candidates);
+            const session = this.#sessions[side];
+            return session.navigateToFirstReadable(this.#startCandidates(side, session.path));
         }));
+    }
+
+    /**
+     * @param {Side} side
+     * @param {string | null} currentPath  what the panel shows when the webview was only rebuilt
+     * @returns {string[]}  tried in order; the home folder is the last resort anyway
+     */
+    #startCandidates(side, currentPath) {
+        const projectFolder = vscode.workspace.workspaceFolders?.[0]?.uri;
+        const project = projectFolder?.scheme === 'file' ? projectFolder.fsPath : Platform.homeDirectory();
+        const remembered = currentPath ?? this.#restoredPaths[side];
+        if (remembered !== undefined) {
+            return [remembered, project];
+        }
+        switch (vscode.workspace.getConfiguration('fileManager').get('startFolder')) {
+            case 'home':
+                return [Platform.homeDirectory()];
+            case 'project':
+                return [project];
+            case 'root':
+                return [Platform.kind === 'win' ? '' : '/'];
+            default: {
+                const saved = /** @type {Partial<Record<Side, string>>} */ (
+                    this.#context.workspaceState.get(Config.WORKSPACE_STATE_KEY) ?? {}
+                );
+                const savedPath = saved[side];
+                return typeof savedPath === 'string' ? [savedPath, project] : [project];
+            }
+        }
+    }
+
+    /**
+     * The settings the webview uses; the same for both panels and every tab.
+     * @returns {Record<string, unknown>}
+     */
+    static #settings() {
+        const settings = vscode.workspace.getConfiguration('fileManager');
+        return {
+            tableScale: settings.get('tableScale', 0),
+            hideExtensionOnRename: settings.get('hideExtensionOnRename', true),
+            unpackIntoSubfolder: settings.get('unpackIntoSubfolder', false),
+            packFormat: settings.get('packFormat', 'zip'),
+        };
+    }
+
+    /**
+     * A choice made in the panel itself (Ctrl+wheel, a checkbox of a dialog) saved to the user settings.
+     * @param {unknown} key
+     * @param {unknown} value
+     */
+    static async #updateSetting(key, value) {
+        const valid = (key === 'tableScale' && Number.isInteger(value))
+            || ((key === 'hideExtensionOnRename' || key === 'unpackIntoSubfolder') && typeof value === 'boolean')
+            || (key === 'packFormat' && (value === 'zip' || value === 'tgz' || value === 'tar'));
+        if (valid) {
+            await vscode.workspace.getConfiguration('fileManager')
+                .update(/** @type {string} */ (key), value, vscode.ConfigurationTarget.Global);
+        }
     }
 
     /**
@@ -233,7 +302,8 @@ class FileManagerPanel {
         try {
             await vscode.commands.executeCommand('vscode.open', vscode.Uri.file(filePath), { preview: false });
         } catch (error) {
-            void vscode.window.showErrorMessage(`Cannot open ${filePath}: ${Common.errorMessage(error)}`);
+            const details = Common.errorMessage(error);
+            void vscode.window.showErrorMessage(I18n.t('error.cannotOpen', { path: filePath, details }));
         }
     }
 
@@ -293,7 +363,7 @@ class FileManagerPanel {
             }
         } catch (error) {
             const reason = Common.errorMessage(error);
-            void vscode.window.showErrorMessage(`Cannot open ${dir} in the file manager: ${reason}`);
+            void vscode.window.showErrorMessage(I18n.t('error.cannotReveal', { path: dir, details: reason }));
         }
     }
 

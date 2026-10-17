@@ -125,7 +125,7 @@ class Format {
     static pathSegments(fullPath, platformKind) {
         if (platformKind === 'win') {
             if (fullPath === '') {
-                return [{ label: 'Drives', path: '', separatorBefore: '' }];
+                return [{ label: I18n.t('panel.drives'), path: '', separatorBefore: '' }];
             }
             const unc = /^(\\\\[^\\]+\\[^\\]+)\\?/.exec(fullPath);
             const drive = /^([a-zA-Z]:)\\?/.exec(fullPath);
@@ -155,6 +155,15 @@ class Format {
             segments.push({ label: part, path: current, separatorBefore });
         }
         return segments;
+    }
+
+    /**
+     * Text put into markup: translations may come from the user's own dictionary.
+     * @param {string} text
+     * @returns {string}
+     */
+    static escapeHtml(text) {
+        return text.replace(/[&<>"']/g, (char) => `&#${char.charCodeAt(0)};`);
     }
 
     /**
