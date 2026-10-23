@@ -13,6 +13,7 @@ const { IconThemeLoader } = require('./iconThemeLoader');
 const { OperationHost } = require('./operationHost');
 const { PanelSession } = require('./panelSession');
 const { Platform } = require('./platform');
+const { TerminalArgument } = require('./terminalArgument');
 const { WebviewHtml } = require('./webviewHtml');
 const { WindowsShell } = require('./windowsShell');
 const { I18n } = require('./i18n');
@@ -178,6 +179,11 @@ class FileManagerPanel {
                     await this.#openFile(session, message.name, message.asFile === true);
                 }
                 break;
+            case 'pasteToTerminal':
+                if (session && typeof message.name === 'string') {
+                    FileManagerPanel.#pasteToTerminal(session, message.name, message.pathKind);
+                }
+                break;
             case 'countFolderSizes':
                 if (session && Array.isArray(message.names)) {
                     const names = message.names.filter((/** @type {unknown} */ name) => typeof name === 'string');
@@ -305,6 +311,84 @@ class FileManagerPanel {
             const details = Common.errorMessage(error);
             void vscode.window.showErrorMessage(I18n.t('error.cannotOpen', { path: filePath, details }));
         }
+    }
+
+    /**
+     * Ctrl+Enter and Ctrl+double-click: the entry goes into the active terminal at its cursor, without Enter, to
+     * complete the command typed there, and the terminal takes the focus, so the next Enter runs it. By name; with
+     * Shift by path from the project folder; with Alt by absolute path. ".." stands for the folder above.
+     * @param {PanelSession} session
+     * @param {string} name
+     * @param {unknown} pathKind
+     */
+    static #pasteToTerminal(session, name, pathKind) {
+        const dir = session.path;
+        if (dir === null || dir === '' || session.isInArchive || /[\\/]/.test(name)) {
+            return;
+        }
+        if (pathKind !== 'name' && pathKind !== 'project' && pathKind !== 'absolute') {
+            return;
+        }
+        const terminal = vscode.window.activeTerminal;
+        if (!terminal) {
+            void vscode.window.showWarningMessage(I18n.t('error.noTerminal'));
+            return;
+        }
+        const entryPath = name === '..' ? path.dirname(dir) : path.join(dir, name);
+        const text = pathKind === 'name' ? name : FileManagerPanel.#terminalPath(entryPath, pathKind);
+        const argument = TerminalArgument.format(text, FileManagerPanel.#shellKindOf(terminal));
+        if (argument === null) {
+            void vscode.window.showErrorMessage(I18n.t('error.terminalUnsafe', { name }));
+            return;
+        }
+        terminal.sendText(`${argument} `, false);
+        terminal.show();
+    }
+
+    /**
+     * The project folder is the workspace folder holding the entry, the first one when none does, and the home
+     * folder without a workspace.
+     * @param {string} entryPath
+     * @param {'project' | 'absolute'} pathKind
+     * @returns {string}
+     */
+    static #terminalPath(entryPath, pathKind) {
+        if (pathKind === 'absolute') {
+            return entryPath;
+        }
+        const folders = (vscode.workspace.workspaceFolders ?? [])
+            .filter((folder) => folder.uri.scheme === 'file')
+            .map((folder) => folder.uri.fsPath);
+        const holding = folders
+            .filter((folder) => FileManagerPanel.#isInside(entryPath, folder))
+            .sort((a, b) => b.length - a.length);
+        const base = holding[0] ?? folders[0] ?? Platform.homeDirectory();
+        return path.relative(base, entryPath) || '.';
+    }
+
+    /**
+     * @param {string} entryPath
+     * @param {string} folder
+     * @returns {boolean}
+     */
+    static #isInside(entryPath, folder) {
+        const relative = path.relative(folder, entryPath);
+        return relative === ''
+            || (relative !== '..' && !relative.startsWith(`..${path.sep}`) && !path.isAbsolute(relative));
+    }
+
+    /**
+     * `Terminal.state.shell` is newer than the VS Code this extension requires; without it, the shell the
+     * terminal was created with, then the default shell.
+     * @param {vscode.Terminal} terminal
+     * @returns {import('./terminalArgument').ShellKind}
+     */
+    static #shellKindOf(terminal) {
+        const state = /** @type {Record<string, unknown>} */ (/** @type {unknown} */ (terminal.state));
+        const options = /** @type {Record<string, unknown>} */ (/** @type {unknown} */ (terminal.creationOptions));
+        const shell = [state.shell, options.shellPath, vscode.env.shell]
+            .find((value) => typeof value === 'string' && value !== '');
+        return TerminalArgument.shellKind(typeof shell === 'string' ? shell : '');
     }
 
     /**

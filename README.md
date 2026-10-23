@@ -59,6 +59,9 @@ The function keys work while a File Manager tab is active; elsewhere VS Code kee
 - `Backspace` — parent folder
 - `Insert` — select or unselect, cursor down
 - `Space` — select or unselect; on a folder, count its size
+- `Ctrl+Enter` — paste the name of the entry into the active terminal
+- `Ctrl+Shift+Enter` — paste its path from the project folder into the active terminal
+- `Ctrl+Alt+Enter` — paste its absolute path into the active terminal
 - `Alt+Shift+Enter` — count the size of every folder
 - `Esc` — stop counting
 - `Ctrl+U` — swap the panels
@@ -81,7 +84,13 @@ The function keys work while a File Manager tab is active; elsewhere VS Code kee
 
 - Click on an icon, or Ctrl+click — select or unselect one entry.
 - Shift+click — select a range; Ctrl+Shift+click adds it to the selection.
+- Right-click opens VS Code's Cut, Copy and Paste menu only in text fields; elsewhere in the File Manager it does nothing.
 - Click on a row — cursor there, selection cleared.
+- Ctrl+double-click, with Shift or Alt — the same as Ctrl+Enter, Ctrl+Shift+Enter and Ctrl+Alt+Enter. Each of the two clicks is still a Ctrl+click and does what it does.
+
+## Terminal
+
+Ctrl+Enter and Ctrl+double-click type the entry into the terminal that is active or was active last, at its cursor and followed by a space, without pressing Enter: it completes the command already typed there, e.g. `php ` or `bash `. The terminal then takes the focus, so the next Enter runs the command there. The project folder of Ctrl+Shift is the workspace folder that holds the entry, the first workspace folder when none does, and the home folder without a workspace; `..` stands for the folder above. A name the shell would read as anything but text — spaces, quotes, `$`, `*`, `;` and the like — is quoted for the shell of the terminal (bash, zsh and other POSIX shells, PowerShell, cmd), and one starting with `-` gets `./` in front, so it is not taken for an option. Ctrl+Alt+Enter is a keybinding of the extension rather than a key of the panel: VS Code gives that key to Replace All of the Search view, and the keybinding keeps it from firing while the File Manager has the focus. Names with control characters are refused, since a line break would run the command line. Inside an archive and in the drive list there is nothing to paste.
 
 ## Drag and drop
 

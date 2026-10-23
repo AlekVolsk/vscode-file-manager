@@ -1,7 +1,7 @@
 {
     "command.category": "File Manager",
     "command.open": "Open File Manager",
-    "command.action": "File Manager Key Action",
+    "command.action": "File Manager key action",
     "config.title": "File Manager",
     "config.language": "Language of the File Manager. `auto` follows the language of VS Code; without a translation for it, English is used.",
     "config.customTranslations": "Your own translation: keys and texts as in `i18n/en.json` of the extension. When not empty, it is used instead of `#fileManager.language#`; keys it lacks are shown in English.",

@@ -1,7 +1,7 @@
 {
     "command.category": "File Manager",
-    "command.open": "File Manager’ı Aç",
-    "command.action": "File Manager Tuş Eylemi",
+    "command.open": "File Manager’ı aç",
+    "command.action": "File Manager tuş eylemi",
     "config.title": "File Manager",
     "config.language": "Dosya yöneticisinin dili. `auto`, VS Code dilini izler; o dil için çeviri yoksa İngilizce kullanılır.",
     "config.customTranslations": "Kendi çeviriniz: anahtarlar ve metinler uzantının `i18n/en.json` dosyasındaki gibi. Boş değilse `#fileManager.language#` yerine kullanılır; eksik anahtarlar İngilizce gösterilir.",

@@ -99,6 +99,7 @@ class FileManagerApp {
     start() {
         window.addEventListener('message', (event) => this.#onMessage(event.data));
         document.addEventListener('keydown', (event) => this.#onKeyDown(event));
+        document.addEventListener('contextmenu', (event) => this.#onContextMenu(event));
         document.addEventListener('wheel', (event) => this.#onWheel(event), { passive: false });
         new MutationObserver(() => this.#rerenderIcons())
             .observe(document.body, { attributes: true, attributeFilter: ['class'] });
@@ -226,6 +227,7 @@ class FileManagerApp {
         return {
             navigate: (path, focusName) => post('navigate', { path, focusName }),
             openFile: (name, asFile = false) => post('openFile', { name, asFile }),
+            pasteToTerminal: (name, pathKind) => post('pasteToTerminal', { name, pathKind }),
             countFolderSizes: (names) => post('countFolderSizes', { names }),
             cancelFolderSizes: () => post('cancelFolderSizes'),
             activate: () => this.#activate(place.side),
@@ -266,6 +268,8 @@ class FileManagerApp {
             await this.#showHelp();
         } else if (action === 'edit') {
             panel.openCursorFileInEditor();
+        } else if (action === 'terminalAbsolutePath') {
+            panel.pasteCursorToTerminal('absolute');
         } else if (action === 'deletePermanently') {
             this.#operations.run('delete', this.#active, { shiftKey: true });
         } else if (FileManagerApp.#OPERATION_ACTIONS.has(action)) {
@@ -302,6 +306,18 @@ class FileManagerApp {
         this.#panels.right.setActive(side === 'right');
         if (changed) {
             this.#scheduleSave();
+        }
+    }
+
+    /**
+     * VS Code shows its Cut/Copy/Paste menu over a webview unless the page has handled the event. It stays in text
+     * fields, where it works; elsewhere there is nothing to cut, copy or paste.
+     * @param {MouseEvent} event
+     */
+    #onContextMenu(event) {
+        const target = /** @type {HTMLElement} */ (event.target);
+        if (!target.closest('input[type="text"]')) {
+            event.preventDefault();
         }
     }
 

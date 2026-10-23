@@ -2,7 +2,7 @@
     "name": "file-manager",
     "displayName": "File Manager",
     "description": "Two-panel file manager in an editor tab, in the spirit of Total Commander and Midnight Commander.",
-    "version": "1.1.0",
+    "version": "1.2.0",
     "publisher": "AlekVolsk",
     "author": "AlekVolsk",
     "license": "BSD-3-Clause",
@@ -252,6 +252,13 @@
                 "command": "fileManager.action",
                 "args": "close",
                 "when": "activeWebviewPanelId == 'fileManager'"
+            },
+            {
+                "key": "ctrl+alt+enter",
+                "mac": "cmd+alt+enter",
+                "command": "fileManager.action",
+                "args": "terminalAbsolutePath",
+                "when": "activeWebviewPanelId == 'fileManager' && !sideBarFocus && !panelFocus && !auxiliaryBarFocus"
             }
         ]
     },

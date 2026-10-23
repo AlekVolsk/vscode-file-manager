@@ -73,10 +73,13 @@
  * @property {number} pxPerCh
  */
 
+/** @typedef {'name' | 'project' | 'absolute'} TerminalPathKind */
+
 /**
  * @typedef {object} PanelCallbacks
  * @property {(path: string, focusName: string | null) => void} navigate
  * @property {(name: string, asFile?: boolean) => void} openFile
+ * @property {(name: string, pathKind: TerminalPathKind) => void} pasteToTerminal
  * @property {(names: string[]) => void} countFolderSizes
  * @property {() => void} cancelFolderSizes
  * @property {() => void} activate
@@ -166,6 +169,8 @@ class PanelView {
     #errorTimer = null;
     /** @type {{ index: number, at: number } | null} */
     #lastRowClick = null;
+    /** @type {{ index: number, pathKind: TerminalPathKind, at: number } | null} */
+    #lastTerminalClick = null;
     /** @type {{ name: string, path: string }[]} */
     #workspaceFolders = [];
     /** @type {HTMLElement | null} */
@@ -320,6 +325,15 @@ class PanelView {
         this.#rebuildRows(focusName, listing.isNewFolder ? 0 : previousCursor);
         this.#applyPendingFocus();
         this.#updateRevealButton();
+    }
+
+    /**
+     * Ctrl+Alt+Enter, which comes as a keybinding: VS Code gives it to Replace All of the Search view, and a key the
+     * webview handles still reaches VS Code.
+     * @param {TerminalPathKind} pathKind
+     */
+    pasteCursorToTerminal(pathKind) {
+        this.#pasteToTerminal(this.#cursor, pathKind);
     }
 
     /**
@@ -496,6 +510,11 @@ class PanelView {
             }
         }
         const plain = !event.ctrlKey && !event.metaKey && !event.altKey;
+        const pathKind = PanelView.#terminalPathKind(event);
+        if (event.key === 'Enter' && (pathKind === 'name' || pathKind === 'project')) {
+            this.#pasteToTerminal(this.#cursor, pathKind);
+            return true;
+        }
         if (event.key === 'Enter' && event.altKey && event.shiftKey && !event.ctrlKey && !event.metaKey) {
             this.#countAllFolderSizes();
             return true;
@@ -634,6 +653,7 @@ class PanelView {
         }
         event.preventDefault();
         this.#viewport.focus({ preventScroll: true });
+        this.#detectTerminalDoubleClick(event, index);
         const toggleKey = Keys.command(event);
         const onSelectableIcon = target.closest('.icon') !== null && PanelView.#isSelectable(this.#rows[index]);
         if (onSelectableIcon || (toggleKey && !event.shiftKey)) {
@@ -670,6 +690,51 @@ class PanelView {
             this.#openRow(row);
         } else if (dragNames.length > 0) {
             this.#callbacks.beginDrag(dragNames, event);
+        }
+    }
+
+    /**
+     * Ctrl+double-click, alone or with Shift or Alt, puts the entry into the terminal. It only adds to the presses:
+     * each of the two is still an ordinary Ctrl+click.
+     * @param {MouseEvent} event
+     * @param {number} index
+     */
+    #detectTerminalDoubleClick(event, index) {
+        const pathKind = PanelView.#terminalPathKind(event);
+        const at = Date.now();
+        const first = this.#lastTerminalClick;
+        const isDoubleClick = pathKind !== null && first !== null && first.index === index
+            && first.pathKind === pathKind && at - first.at <= PanelView.#DOUBLE_CLICK_MS;
+        this.#lastTerminalClick = pathKind === null || isDoubleClick ? null : { index, pathKind, at };
+        if (isDoubleClick) {
+            this.#pasteToTerminal(index, pathKind);
+        }
+    }
+
+    /**
+     * Ctrl+Enter and Ctrl+double-click: by name; with Shift, by path from the project folder; with Alt, by absolute
+     * path.
+     * @param {MouseEvent | KeyboardEvent} event
+     * @returns {TerminalPathKind | null}
+     */
+    static #terminalPathKind(event) {
+        if (!Keys.command(event) || Keys.unused(event) || (event.shiftKey && event.altKey)) {
+            return null;
+        }
+        if (event.altKey) {
+            return 'absolute';
+        }
+        return event.shiftKey ? 'project' : 'name';
+    }
+
+    /**
+     * @param {number} index
+     * @param {TerminalPathKind} pathKind
+     */
+    #pasteToTerminal(index, pathKind) {
+        const row = this.#rows[index];
+        if (row && this.canOperate) {
+            this.#callbacks.pasteToTerminal(row.name, pathKind);
         }
     }
 
