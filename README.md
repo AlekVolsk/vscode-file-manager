@@ -2,6 +2,8 @@
 
 A two-panel file manager in an editor tab, in the spirit of Total Commander and Midnight Commander: copy, move, rename, delete, attributes, properties and archives, by toolbar, keys and drag and drop.
 
+> This extension was created and is maintained with the help of AI tools.
+
 ![File Manager: two panels in an editor tab](images/screen.png)
 
 ## Installation
@@ -90,7 +92,7 @@ The function keys work while a File Manager tab is active; elsewhere VS Code kee
 
 ## Terminal
 
-Ctrl+Enter and Ctrl+double-click type the entry into the terminal that is active or was active last, at its cursor and followed by a space, without pressing Enter: it completes the command already typed there, e.g. `php ` or `bash `. The terminal then takes the focus, so the next Enter runs the command there. The project folder of Ctrl+Shift is the workspace folder that holds the entry, the first workspace folder when none does, and the home folder without a workspace; `..` stands for the folder above. A name the shell would read as anything but text — spaces, quotes, `$`, `*`, `;` and the like — is quoted for the shell of the terminal (bash, zsh and other POSIX shells, PowerShell, cmd), and one starting with `-` gets `./` in front, so it is not taken for an option. Ctrl+Alt+Enter is a keybinding of the extension rather than a key of the panel: VS Code gives that key to Replace All of the Search view, and the keybinding keeps it from firing while the File Manager has the focus. Names with control characters are refused, since a line break would run the command line. Inside an archive and in the drive list there is nothing to paste.
+Ctrl+Enter and Ctrl+double-click type the entry into the terminal that is active or was active last, at its cursor and followed by a space, without pressing Enter: it completes the command already typed there, e.g. `php` or `bash`. The terminal then takes the focus, so the next Enter runs the command there. The project folder of Ctrl+Shift is the workspace folder that holds the entry, the first workspace folder when none does, and the home folder without a workspace; `..` stands for the folder above. A name the shell would read as anything but text — spaces, quotes, `$`, `*`, `;` and the like — is quoted for the shell of the terminal (bash, zsh and other POSIX shells, PowerShell, cmd), and one starting with `-` gets `./` in front, so it is not taken for an option. Ctrl+Alt+Enter is a keybinding of the extension rather than a key of the panel: VS Code gives that key to Replace All of the Search view, and the keybinding keeps it from firing while the File Manager has the focus. Names with control characters are refused, since a line break would run the command line. Inside an archive and in the drive list there is nothing to paste.
 
 ## Drag and drop
 
@@ -157,6 +159,10 @@ npm run build
 ```
 
 `npm run check` runs the TypeScript checker over the JavaScript sources; `npm run build` writes `file-manager.vsix`.
+
+## Changelog
+
+Release pages carry no detailed notes; what changed in each version is in [CHANGELOG.md](CHANGELOG.md).
 
 ## License
 

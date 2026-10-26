@@ -8,3 +8,5 @@ node_modules/**/dist/esm/**
 **/*.d.ts
 **/*.d.mts
 **/*.d.cts
+.claude/**
+CLAUDE.md

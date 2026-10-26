@@ -2,7 +2,7 @@
     "name": "file-manager",
     "displayName": "File Manager",
     "description": "Two-panel file manager in an editor tab, in the spirit of Total Commander and Midnight Commander.",
-    "version": "1.2.0",
+    "version": "1.2.1",
     "publisher": "AlekVolsk",
     "author": "AlekVolsk",
     "license": "BSD-3-Clause",
