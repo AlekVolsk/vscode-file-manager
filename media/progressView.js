@@ -99,7 +99,7 @@ class ProgressView {
 <div class="progress-bar current"><div class="progress-fill"></div></div>
 <div class="progress-bar total"><div class="progress-fill"></div></div>
 <div class="progress-counts"></div>
-<div class="progress-actions"><button type="button" class="dialog-button"></button></div>`;
+<div class="progress-actions"><button type="button" class="dialog-button danger"></button></div>`;
         const cancel = /** @type {HTMLButtonElement} */ (box.querySelector('button'));
         cancel.textContent = I18n.t('button.cancel');
         cancel.addEventListener('click', () => this.#onCancel());

@@ -6,6 +6,8 @@
  * @property {string} action
  * @property {string} label
  * @property {boolean} [primary]
+ * @property {boolean} [disabled]
+ * @property {number} [row]
  * @property {number} [countdownSeconds]  disabled, counting down on its label, before it can be pressed
  */
 
@@ -31,6 +33,7 @@
  * @property {{ value: string, selectionEnd?: number }} [input]
  * @property {DialogCheckbox} [checkbox]
  * @property {HTMLElement} [body]  custom content below the message, built by the caller
+ * @property {boolean} [equalButtonWidths]
  * @property {DialogButton[]} buttons
  * @property {string} cancelAction  what Esc does
  * @property {(result: DialogResult) => Promise<string | null>} [submit]
@@ -194,11 +197,25 @@ class DialogView {
                 input?.focus();
             };
 
+            let currentRow = buttonRow;
+            let rowNumber = 0;
             for (const button of options.buttons) {
+                if ((button.row ?? 0) !== rowNumber) {
+                    rowNumber = button.row ?? 0;
+                    currentRow = document.createElement('div');
+                    currentRow.className = 'dialog-buttons';
+                    dialog.appendChild(currentRow);
+                }
                 const element = document.createElement('button');
                 element.type = 'button';
                 element.className = button.primary ? 'dialog-button primary' : 'dialog-button';
+                if (button.action === 'cancel' || button.action === 'abort') {
+                    element.classList.add('danger');
+                } else if (options.equalButtonWidths) {
+                    currentRow.classList.add('equal-widths');
+                }
                 element.textContent = button.label;
+                element.disabled = button.disabled === true;
                 element.addEventListener('click', () => void press(button));
                 if (button.countdownSeconds) {
                     let remaining = button.countdownSeconds;
@@ -217,7 +234,7 @@ class DialogView {
                     timers.push(timer);
                 }
                 buttons.set(button.action, element);
-                buttonRow.appendChild(element);
+                currentRow.appendChild(element);
             }
 
             dialog.addEventListener('keydown', (event) => {

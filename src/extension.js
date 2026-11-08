@@ -17,6 +17,10 @@ function activate(context) {
     void moveViewStateToSettings(context);
     context.subscriptions.push(
         vscode.commands.registerCommand(Config.COMMAND_OPEN, () => FileManagerPanel.open(context)),
+        vscode.commands.registerCommand(Config.COMMAND_OPEN_LEFT,
+            (resource) => FileManagerPanel.openFromExplorer(context, 'left', resource)),
+        vscode.commands.registerCommand(Config.COMMAND_OPEN_RIGHT,
+            (resource) => FileManagerPanel.openFromExplorer(context, 'right', resource)),
         vscode.commands.registerCommand(Config.COMMAND_ACTION, (action) => FileManagerPanel.runAction(action)),
         vscode.window.registerWebviewPanelSerializer(Config.VIEW_TYPE, {
             async deserializeWebviewPanel(panel, state) {

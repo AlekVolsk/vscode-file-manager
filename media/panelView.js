@@ -77,6 +77,10 @@
 
 /**
  * @typedef {object} PanelCallbacks
+ * @property {(path: string) => void} history
+ * @property {() => void} addFavorite
+ * @property {() => void} clearFavorites
+ * @property {() => void} clearHistory
  * @property {(path: string, focusName: string | null) => void} navigate
  * @property {(name: string, asFile?: boolean) => void} openFile
  * @property {(name: string, pathKind: TerminalPathKind) => void} pasteToTerminal
@@ -87,6 +91,7 @@
  * @property {(action: OperationAction, modifiers: { shiftKey: boolean }) => void} operation
  * @property {(names: string[], event: MouseEvent) => void} beginDrag
  * @property {(cursorName: string | null) => void} revealInOs
+ * @property {() => void} neighbor
  * @property {() => void} help
  */
 
@@ -122,6 +127,7 @@ class PanelView {
     static #CELL_PADDING_CH = 1;
 
     #callbacks;
+    #toolbar;
     #icons;
     #platform;
     #root;
@@ -175,6 +181,10 @@ class PanelView {
     #workspaceFolders = [];
     /** @type {HTMLElement | null} */
     #menu = null;
+    /** @type {string[]} */
+    #history = [];
+    /** @type {string[]} */
+    #favorites = [];
     /** @type {((event: MouseEvent) => void) | null} */
     #closeMenuListener = null;
     /** @type {string | null} */
@@ -214,7 +224,8 @@ class PanelView {
         this.#root = document.createElement('section');
         this.#root.className = 'panel';
         this.#root.innerHTML = PanelView.#template();
-        this.#root.prepend(new ToolbarView().element);
+        this.#toolbar = new ToolbarView(platform.isWsl);
+        this.#root.prepend(this.#toolbar.element);
         container.appendChild(this.#root);
 
         this.#pathInput = this.#query('.path-input');
@@ -234,6 +245,16 @@ class PanelView {
         this.#bindEvents();
         this.#measureRowHeight();
         this.#applyStateToControls();
+    }
+
+    /**
+     * Applies shared presentation settings to this pane.
+     * @param {Record<string, boolean>} visibility
+     */
+    setVisibility(visibility) {
+        this.#toolbar.setVisibility(visibility);
+        this.#root.classList.toggle('hide-breadcrumbs', visibility.breadcrumbs === false);
+        this.#root.classList.toggle('hide-attributes', visibility.attributesColumn === false);
     }
 
     /**
@@ -657,10 +678,19 @@ class PanelView {
         const toggleKey = Keys.command(event);
         const onSelectableIcon = target.closest('.icon') !== null && PanelView.#isSelectable(this.#rows[index]);
         if (onSelectableIcon || (toggleKey && !event.shiftKey)) {
-            this.#lastRowClick = null;
+            const now = Date.now();
+            const isDoubleClick = !toggleKey && !event.shiftKey && this.#lastRowClick !== null
+                && this.#lastRowClick.index === index
+                && now - this.#lastRowClick.at <= PanelView.#DOUBLE_CLICK_MS;
+            this.#lastRowClick = toggleKey || event.shiftKey || isDoubleClick ? null : { index, at: now };
             this.#selectionAnchor = this.#rows[index]?.name ?? null;
-            this.#toggleSelection(index);
             this.#moveCursor(index);
+            if (isDoubleClick) {
+                this.#clearSelection();
+                this.#openRow(this.#rows[index]);
+            } else {
+                this.#toggleSelection(index);
+            }
             return;
         }
         if (event.shiftKey) {
@@ -800,6 +830,12 @@ class PanelView {
             case 'parent':
                 this.#goToParent();
                 break;
+            case 'neighbor':
+                this.#callbacks.neighbor();
+                break;
+            case 'mounts':
+                this.#navigate('/mnt', null);
+                break;
             case 'home':
                 this.#navigate(this.#platform.home, null);
                 break;
@@ -809,6 +845,12 @@ class PanelView {
             case 'reveal':
                 this.#callbacks.revealInOs(this.#currentName());
                 break;
+            case 'favorites':
+                this.#openFavorites();
+                break;
+            case 'history':
+                this.#openHistory();
+                return;
             case 'help':
                 this.#callbacks.help();
                 return;
@@ -900,6 +942,123 @@ class PanelView {
         this.#closeMenuListener = closeOnOutsideClick;
     }
 
+    /** @param {string[]} entries */
+    setHistory(entries) {
+        this.#history = entries;
+        if (this.#menu?.classList.contains('history-menu') && !this.#menu.classList.contains('favorites-menu')) {
+            this.#closeMenu();
+            this.#openHistory();
+        }
+    }
+
+    /** @param {string[]} entries */
+    setFavorites(entries) {
+        this.#favorites = entries;
+        if (this.#menu?.classList.contains('favorites-menu')) {
+            this.#closeMenu();
+            this.#openFavorites();
+        }
+    }
+
+    #openFavorites() {
+        if (this.#menu) {
+            this.#closeMenu();
+            return;
+        }
+        const menu = document.createElement('div');
+        menu.className = 'menu history-menu favorites-menu';
+        const list = document.createElement('div');
+        list.className = 'history-list';
+        menu.appendChild(list);
+        for (const folder of this.#favorites) {
+            const item = document.createElement('button');
+            item.className = 'menu-item';
+            item.textContent = folder;
+            item.title = folder;
+            item.addEventListener('click', () => {
+                this.#closeMenu();
+                this.#callbacks.navigate(folder, null);
+                this.#viewport.focus();
+            });
+            list.appendChild(item);
+        }
+        if (this.#favorites.length === 0) {
+            const empty = document.createElement('div');
+            empty.className = 'favorites-empty';
+            empty.textContent = I18n.t('favorites.empty');
+            list.appendChild(empty);
+        }
+        const footer = document.createElement('div');
+        footer.className = 'favorites-footer';
+        const add = document.createElement('button');
+        add.className = 'menu-item';
+        add.textContent = I18n.t('favorites.add');
+        add.disabled = !this.#path || this.#favorites.includes(this.#path);
+        add.addEventListener('click', () => this.#callbacks.addFavorite());
+        const clear = document.createElement('button');
+        clear.className = 'menu-item';
+        clear.textContent = I18n.t('favorites.clear');
+        clear.disabled = this.#favorites.length === 0;
+        clear.addEventListener('click', () => this.#callbacks.clearFavorites());
+        footer.append(add, clear);
+        menu.appendChild(footer);
+        const bounds = this.#root.getBoundingClientRect();
+        const button = this.#query('[data-action="favorites"]');
+        menu.style.top = `${button.getBoundingClientRect().bottom - bounds.top}px`;
+        this.#menu = menu;
+        this.#root.appendChild(menu);
+        const closeOnOutsideClick = (/** @type {MouseEvent} */ event) => {
+            if (!menu.contains(/** @type {Node} */ (event.target))) {
+                this.#closeMenu();
+            }
+        };
+        document.addEventListener('mousedown', closeOnOutsideClick, true);
+        this.#closeMenuListener = closeOnOutsideClick;
+    }
+
+    #openHistory() {
+        if (this.#menu) {
+            this.#closeMenu();
+            return;
+        }
+        const button = this.#query('[data-action="history"]');
+        const menu = document.createElement('div');
+        menu.className = 'menu history-menu';
+        const clear = document.createElement('button');
+        clear.className = 'menu-item history-clear';
+        clear.textContent = I18n.t('history.clear');
+        clear.disabled = this.#history.length === 0;
+        clear.addEventListener('click', () => this.#callbacks.clearHistory());
+        const list = document.createElement('div');
+        list.className = 'history-list';
+        menu.appendChild(list);
+        for (const folder of this.#history) {
+            const item = document.createElement('button');
+            item.className = 'menu-item';
+            item.textContent = folder || I18n.t('history.drives');
+            item.title = folder || I18n.t('history.drives');
+            item.addEventListener('click', () => {
+                this.#closeMenu();
+                this.#callbacks.history(folder);
+                this.#viewport.focus();
+            });
+            list.appendChild(item);
+        }
+        menu.appendChild(clear);
+        const bounds = this.#root.getBoundingClientRect();
+        menu.style.top = `${button.getBoundingClientRect().bottom - bounds.top}px`;
+        this.#root.appendChild(menu);
+        this.#menu = menu;
+        const outside = (/** @type {MouseEvent} */ event) => {
+            const target = /** @type {Node} */ (event.target);
+            if (!menu.contains(target) && !button.contains(target)) {
+                this.#closeMenu();
+            }
+        };
+        document.addEventListener('mousedown', outside, true);
+        this.#closeMenuListener = outside;
+    }
+
     #closeMenu() {
         this.#menu?.remove();
         this.#menu = null;
@@ -917,7 +1076,7 @@ class PanelView {
             this.#state.sortDescending = !this.#state.sortDescending;
         } else {
             this.#state.sortKey = key;
-            this.#state.sortDescending = false;
+            this.#state.sortDescending = key === 'date';
         }
         this.#applyStateToControls();
         this.#rebuildRows(this.#currentName());

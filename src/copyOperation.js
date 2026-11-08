@@ -24,7 +24,7 @@ const { I18n } = require('./i18n');
 
 /**
  * @typedef {{ kind: 'conflict', name: string, target: string, source: EntryFacts, existing: EntryFacts,
- *     canOverwrite: boolean }
+ *     canOverwrite: boolean, hasMore?: boolean }
  *     | { kind: 'error', name: string, message: string }} OperationQuestion
  */
 
@@ -74,6 +74,7 @@ class CopyOperation {
     /** @type {'overwrite' | 'rename' | 'skip' | null} */
     #conflictForAll = null;
     #skipAllErrors = false;
+    #pendingEntries = 0;
     /** @type {OperationSummary} */
     #summary = { done: 0, skipped: 0, failed: 0, metadataWarnings: 0, cancelled: false };
     /** @type {CopyProgress} */
@@ -155,7 +156,9 @@ class CopyOperation {
     async run() {
         try {
             await this.#scan();
+            this.#pendingEntries = this.#items.length;
             for (const item of this.#items) {
+                this.#pendingEntries--;
                 await this.#transferEntry(item.source, item.target);
             }
         } catch (error) {
@@ -254,7 +257,9 @@ class CopyOperation {
             return false;
         }
         let complete = true;
+        this.#pendingEntries += children.length;
         for (const child of children) {
+            this.#pendingEntries--;
             const arrived = await this.#transferEntry(path.join(source, child), path.join(finalTarget, child));
             complete = complete && arrived;
         }
@@ -367,6 +372,7 @@ class CopyOperation {
                     source: CopyOperation.#facts(sourceStats),
                     existing: CopyOperation.#facts(existing),
                     canOverwrite,
+                    hasMore: this.#pendingEntries > 0 || sourceStats.isDirectory(),
                 })
             );
             if (answer.action === 'cancel') {

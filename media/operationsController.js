@@ -28,7 +28,7 @@
  * panels show; the extension host builds the paths, checks the names and does the work.
  */
 class OperationsController {
-    static #DELETE_COUNTDOWN_SECONDS = 5;
+    static #DELETE_COUNTDOWN_SECONDS = 3;
     static #ARCHIVE_NAME = /\.(zip|tar\.gz|tgz|tar)$/i;
     /** @type {Record<string, string>} */
     static #FORMAT_EXTENSIONS = { zip: '.zip', tgz: '.tar.gz', tar: '.tar' };
@@ -480,8 +480,7 @@ class OperationsController {
     }
 
     /**
-     * Always confirmed. Deleting past the trash — Shift, or no trash at all — is confirmed a second time, and
-     * that confirmation cannot be pressed for the first seconds.
+     * Deletion uses one confirmation dialog; permanent deletion is disabled for a three-second countdown.
      * @param {'left' | 'right'} side
      * @param {boolean} shiftKey
      */
@@ -492,43 +491,30 @@ class OperationsController {
             return;
         }
         const permanent = shiftKey || !this.#trashAvailable;
+        const entry = panel.operationEntries[0];
         const question = names.length === 1
-            ? I18n.t(permanent ? 'delete.permanentOne' : 'delete.trashOne', { name: names[0] })
-            : `${I18n.t(permanent ? 'delete.permanentMany' : 'delete.trashMany')} ${OperationsController.#what(names)}`;
-        const first = await this.#dialogs.show({
-            title: I18n.t(permanent ? 'dialog.delete' : 'dialog.moveToTrash'),
+            ? I18n.t(entry?.isDir ? 'delete.folder' : 'delete.file', { name: names[0] })
+            : I18n.t('delete.items', { count: names.length });
+        const confirmation = await this.#dialogs.show({
+            title: I18n.t(permanent ? 'dialog.deletePermanently' : 'dialog.moveToTrash'),
             message: question,
-            lines: OperationsController.#listedNames(names),
+            lines: permanent
+                ? [I18n.t('delete.cannotUndo'), ...(!this.#trashAvailable ? [I18n.t('delete.noTrash')] : [])]
+                : [],
             buttons: [
-                { action: 'delete', label: I18n.t(permanent ? 'button.delete' : 'button.moveToTrash'), primary: true },
+                {
+                    action: 'delete',
+                    label: I18n.t(permanent ? 'button.deletePermanently' : 'button.moveToTrash'),
+                    primary: true,
+                    countdownSeconds: permanent ? OperationsController.#DELETE_COUNTDOWN_SECONDS : undefined,
+                },
                 { action: 'cancel', label: I18n.t('button.cancel') },
             ],
             cancelAction: 'cancel',
         });
-        if (first.action !== 'delete') {
+        if (confirmation.action !== 'delete') {
             panel.focus();
             return;
-        }
-        if (permanent) {
-            const reason = this.#trashAvailable ? '' : ` ${I18n.t('delete.noTrash')}`;
-            const second = await this.#dialogs.show({
-                title: I18n.t('dialog.deletePermanently'),
-                message: `${OperationsController.#what(names)}. ${I18n.t('delete.cannotUndo')}${reason}`,
-                buttons: [
-                    {
-                        action: 'delete',
-                        label: I18n.t('button.deletePermanently'),
-                        primary: true,
-                        countdownSeconds: OperationsController.#DELETE_COUNTDOWN_SECONDS,
-                    },
-                    { action: 'cancel', label: I18n.t('button.cancel') },
-                ],
-                cancelAction: 'cancel',
-            });
-            if (second.action !== 'delete') {
-                panel.focus();
-                return;
-            }
         }
         const result = await this.#request({ type: 'startDelete', side, names, permanent });
         if (!result.ok) {
@@ -546,27 +532,43 @@ class OperationsController {
     async #answer(questionId, question) {
         if (question.kind === 'conflict') {
             const buttons = [
-                { action: 'overwrite', label: I18n.t('button.overwrite'), primary: true },
-                { action: 'rename', label: I18n.t('button.keepBoth'), primary: !question.canOverwrite },
-                { action: 'skip', label: I18n.t('button.skip') },
-                { action: 'cancel', label: I18n.t('button.cancel') },
-            ].filter((button) => button.action !== 'overwrite' || question.canOverwrite);
+                {
+                    action: 'overwrite', label: I18n.t('button.overwrite'),
+                    primary: question.canOverwrite, disabled: !question.canOverwrite, row: 0,
+                },
+                { action: 'rename', label: I18n.t('button.keepBoth'), primary: !question.canOverwrite, row: 0 },
+                { action: 'skip', label: I18n.t('button.skip'), row: 0 },
+            ];
+            if (question.hasMore !== false) {
+                buttons.push(
+                    {
+                        action: 'overwriteAll', label: I18n.t('button.overwriteAll'),
+                        primary: false, disabled: !question.canOverwrite, row: 1,
+                    },
+                    { action: 'renameAll', label: I18n.t('button.keepAll'), row: 1 },
+                    { action: 'skipAll', label: I18n.t('button.skipAll'), row: 1 },
+                );
+            }
+            buttons.push({ action: 'cancel', label: I18n.t('button.cancel'), row: 2 });
             const result = await this.#dialogs.show({
                 title: I18n.t('dialog.nameTaken'),
+                equalButtonWidths: true,
                 message: I18n.t('conflict.exists', { name: question.name }),
                 lines: [
                     I18n.t('conflict.existing', { facts: OperationsController.#describe(question.existing) }),
                     I18n.t('conflict.new', { facts: OperationsController.#describe(question.source) }),
                     I18n.t('conflict.keepBothHint'),
                 ],
-                checkbox: { label: I18n.t('conflict.forAll'), checked: false },
                 buttons,
                 cancelAction: 'cancel',
             });
             this.#context.post({
                 type: 'operationAnswer',
                 questionId,
-                answer: { action: result.action, forAll: result.checked },
+                answer: {
+                    action: result.action.endsWith('All') ? result.action.slice(0, -3) : result.action,
+                    forAll: result.action.endsWith('All'),
+                },
             });
             return;
         }

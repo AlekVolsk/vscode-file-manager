@@ -83,8 +83,9 @@ class PanelSession {
      * a folder. On failure the panel stays where it was and gets the error.
      * @param {string} requestedPath
      * @param {string | null} focusName
+     * @param {boolean} [fromHistory]
      */
-    async navigate(requestedPath, focusName) {
+    async navigate(requestedPath, focusName, fromHistory = false) {
         const navigation = ++this.#navigation;
         const target = this.#resolve(requestedPath);
         try {
@@ -104,6 +105,10 @@ class PanelSession {
             this.#watchCurrent();
         } catch (error) {
             if (navigation === this.#navigation) {
+                if (fromHistory && error && typeof error === 'object' && 'code' in error
+                    && (error.code === 'ENOENT' || error.code === 'ENOTDIR')) {
+                    this.#post({ type: 'historyMissing', side: this.#side, path: target });
+                }
                 this.#post({ type: 'error', side: this.#side, message: Common.errorMessage(error) });
             }
         }
@@ -178,7 +183,10 @@ class PanelSession {
         }
         const entries = listing.entriesOf(inner);
         if (!entries) {
-            throw new Error(I18n.t('error.notInArchive', { path: inner.join('/'), archive: path.basename(file) }));
+            throw Object.assign(
+                new Error(I18n.t('error.notInArchive', { path: inner.join('/'), archive: path.basename(file) })),
+                { code: 'ENOENT' },
+            );
         }
         if (navigation !== this.#navigation) {
             return;

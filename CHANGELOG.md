@@ -1,5 +1,22 @@
 # Changelog
 
+## 1.2.2 — 2026-11-08
+
+- Double-clicking a file or folder icon opens the entry and clears the selection, regardless of its initial selection state.
+- Localized Explorer context menu commands open a folder or reveal a file in the left or right File Manager pane.
+- Copy and move conflict dialogs offer Replace, Keep both and Skip, with separate actions for all remaining conflicts. Unavailable actions stay visible but disabled; the second button row is omitted for the last entry.
+- Deletion uses a single confirmation showing the file or folder name, or the selected item count. Permanent deletion requires a three-second countdown.
+- Conflict action buttons have equal widths; Cancel buttons use danger styling throughout dialogs and operation progress.
+- In WSL, both pane toolbars include a cylinder-icon button before Home to navigate to `/mnt`.
+- A toolbar button opens the other pane’s folder in the current pane without changing the other pane.
+- Shared persistent folder histories keep 300 unique recent locations per logical pane, with quick navigation and clearing. Pane identities follow Ctrl+U and survive tab restoration.
+- Shared persistent folder favorites sync across all panes and tabs, with insertion-order navigation and fixed add and clear actions.
+- Normalized toolbar button order by logical action groups.
+- Added an equal-width function button bar for F2–F10 and Sh+F4, with localized labels and action tooltips.
+- Selecting date sorting defaults to newest first.
+- Control visibility settings.
+- Reduced the default table font size by 2 pixels.
+
 ## 1.2.1 — 2026-10-26
 
 - The README states that the extension is developed and maintained with the help of AI tools.

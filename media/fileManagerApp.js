@@ -3,6 +3,7 @@
 
 /**
  * @typedef {object} AppViewState
+ * @property {'first' | 'second'} [leftIdentity]
  * @property {number} ratio  share of the left panel
  * @property {'left' | 'right'} active
  * @property {{ left?: Partial<PanelViewState>, right?: Partial<PanelViewState> }} panels
@@ -11,6 +12,7 @@
 
 /**
  * @typedef {object} Settings  the `fileManager.*` settings of VS Code the webview uses
+ * @property {Record<string, boolean>} [visibility]
  * @property {number} tableScale
  * @property {boolean} hideExtensionOnRename
  * @property {boolean} unpackIntoSubfolder
@@ -21,6 +23,18 @@
  * The two panels, the splitter between them, keyboard routing and the messages to and from the extension host.
  */
 class FileManagerApp {
+    static #FUNCTION_BUTTONS = [
+        { key: 'F2', action: 'rename', label: 'toolbar.rename', description: 'help.key.f2' },
+        { key: 'F3', action: 'properties', label: 'toolbar.properties', description: 'help.key.f3' },
+        { key: 'F4', action: 'edit', label: 'functionBar.open', description: 'help.key.f4' },
+        { key: 'Sh+F4', action: 'newFile', label: 'toolbar.newFile', description: 'help.key.shiftF4' },
+        { key: 'F5', action: 'copy', label: 'button.copy', description: 'help.key.f5' },
+        { key: 'F6', action: 'move', label: 'button.move', description: 'help.key.f6' },
+        { key: 'F7', action: 'newFolder', label: 'toolbar.newFolder', description: 'help.key.f7' },
+        { key: 'F8', action: 'delete', label: 'button.delete', description: 'help.key.f8' },
+        { key: 'F9', action: 'attributes', label: 'toolbar.attributes', description: 'help.key.f9' },
+        { key: 'F10', action: 'close', label: 'button.close', description: 'help.key.f10' },
+    ];
     static #MIN_RATIO = 0.15;
     static #MAX_RATIO = 0.85;
     static #SAVE_DELAY_MS = 300;
@@ -43,6 +57,7 @@ class FileManagerApp {
     static #MIN_FONT_SIZE = 6;
     static #MAX_FONT_SIZE = 48;
     static #FALLBACK_FONT_SIZE = 14;
+    static #BASE_FONT_OFFSET = -2;
 
     #api;
     #icons;
@@ -66,6 +81,8 @@ class FileManagerApp {
     /** @type {OperationsController} */
     #operations;
     #swapPending = false;
+    /** @type {'first' | 'second'} */
+    #leftIdentity = 'first';
     /** @type {{ side: 'left' | 'right' }[]} */
     #places = [];
     /** @type {ReturnType<typeof setTimeout> | null} */
@@ -129,6 +146,7 @@ class FileManagerApp {
         if (message?.type === 'settings') {
             this.#settings = { ...this.#settings, ...message.settings };
             this.#applyFontSize();
+            this.#applyVisibility();
             return;
         }
         if (message?.type === 'workspaceFolders' && this.#panels) {
@@ -163,6 +181,14 @@ class FileManagerApp {
             return;
         }
         switch (message.type) {
+            case 'favorites':
+                panel.setFavorites(message.entries);
+                break;
+            case 'history':
+                this.#leftIdentity = message.leftIdentity;
+                panel.setHistory(message.entries);
+                this.#scheduleSave();
+                break;
             case 'listing':
                 panel.setListing(message);
                 if (message.isNewFolder) {
@@ -192,9 +218,10 @@ class FileManagerApp {
         if (this.#panels) {
             return;
         }
-        this.#root.innerHTML = '<div class="panel-slot left"></div>'
+        this.#root.innerHTML = '<div class="panes"><div class="panel-slot left"></div>'
             + '<div class="splitter"></div>'
-            + '<div class="panel-slot right"></div>';
+            + '<div class="panel-slot right"></div></div>';
+        this.#buildFunctionBar();
         const leftSlot = /** @type {HTMLElement} */ (this.#root.querySelector('.panel-slot.left'));
         const rightSlot = /** @type {HTMLElement} */ (this.#root.querySelector('.panel-slot.right'));
         this.#panels = {
@@ -211,6 +238,38 @@ class FileManagerApp {
         this.#applyFontSize();
         this.#bindSplitter(/** @type {HTMLElement} */ (this.#root.querySelector('.splitter')));
         this.#activate(viewState?.active === 'right' ? 'right' : 'left');
+        this.#applyVisibility();
+    }
+
+    /**
+     * Updates all controls while keeping keyboard actions enabled.
+     */
+    #applyVisibility() {
+        const visibility = this.#settings.visibility ?? {};
+        this.#panels?.left.setVisibility(visibility);
+        this.#panels?.right.setVisibility(visibility);
+        const bar = /** @type {HTMLElement | null} */ (this.#root.querySelector('.function-bar'));
+        if (bar) {
+            bar.hidden = visibility.functionBar === false;
+        }
+    }
+
+    /**
+     * Builds equal-width shortcuts for the active pane using the keyboard action handlers.
+     */
+    #buildFunctionBar() {
+        const bar = document.createElement('div');
+        bar.className = 'function-bar';
+        for (const item of FileManagerApp.#FUNCTION_BUTTONS) {
+            const button = document.createElement('button');
+            button.type = 'button';
+            button.textContent = `${item.key} • ${I18n.t(item.label)}`;
+            button.title = `${item.key} • ${I18n.t(item.description)}`;
+            button.addEventListener('mousedown', (event) => event.preventDefault());
+            button.addEventListener('click', () => void this.#runAction(item.action));
+            bar.appendChild(button);
+        }
+        this.#root.appendChild(bar);
     }
 
     /**
@@ -226,6 +285,16 @@ class FileManagerApp {
         };
         return {
             navigate: (path, focusName) => post('navigate', { path, focusName }),
+            history: (path) => post('navigate', { path, fromHistory: true }),
+            clearHistory: () => post('clearHistory'),
+            addFavorite: () => post('addFavorite'),
+            clearFavorites: () => post('clearFavorites'),
+            neighbor: () => {
+                const other = this.#panels?.[place.side === 'left' ? 'right' : 'left'];
+                if (other?.path !== null && other?.path !== undefined) {
+                    post('navigate', { path: other.path, focusName: null });
+                }
+            },
             openFile: (name, asFile = false) => post('openFile', { name, asFile }),
             pasteToTerminal: (name, pathKind) => post('pasteToTerminal', { name, pathKind }),
             countFolderSizes: (names) => post('countFolderSizes', { names }),
@@ -264,7 +333,9 @@ class FileManagerApp {
             return;
         }
         const panel = this.#panels[this.#active];
-        if (action === 'help') {
+        if (action === 'close') {
+            this.#api.postMessage({ type: 'close' });
+        } else if (action === 'help') {
             await this.#showHelp();
         } else if (action === 'edit') {
             panel.openCursorFileInEditor();
@@ -433,7 +504,7 @@ class FileManagerApp {
         const editorFontSize = getComputedStyle(document.documentElement).getPropertyValue('--vscode-editor-font-size');
         const baseSize = parseFloat(editorFontSize) || FileManagerApp.#FALLBACK_FONT_SIZE;
         const next = this.#settings.tableScale + (delta < 0 ? 1 : -1);
-        const size = baseSize + next;
+        const size = baseSize + FileManagerApp.#BASE_FONT_OFFSET + next;
         if (size < FileManagerApp.#MIN_FONT_SIZE || size > FileManagerApp.#MAX_FONT_SIZE) {
             return;
         }
@@ -451,7 +522,7 @@ class FileManagerApp {
     #applyFontSize() {
         document.documentElement.style.setProperty(
             '--table-font-size',
-            `calc(var(--vscode-editor-font-size) + ${this.#settings.tableScale}px)`,
+            `calc(var(--vscode-editor-font-size) + ${FileManagerApp.#BASE_FONT_OFFSET + this.#settings.tableScale}px)`,
         );
         this.#panels?.left.updateScale();
         this.#panels?.right.updateScale();
@@ -488,6 +559,7 @@ class FileManagerApp {
             }
             /** @type {AppViewState} */
             const state = {
+                leftIdentity: this.#leftIdentity,
                 ratio: this.#ratio,
                 active: this.#active,
                 panels: { left: this.#panels.left.viewState, right: this.#panels.right.viewState },

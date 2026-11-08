@@ -2,7 +2,7 @@
     "name": "file-manager",
     "displayName": "File Manager",
     "description": "Two-panel file manager in an editor tab, in the spirit of Total Commander and Midnight Commander.",
-    "version": "1.2.1",
+    "version": "1.2.2",
     "publisher": "AlekVolsk",
     "author": "AlekVolsk",
     "license": "BSD-3-Clause",
@@ -36,6 +36,16 @@
     },
     "contributes": {
         "commands": [
+            {
+                "command": "fileManager.openLeft",
+                "title": "%command.openLeft%",
+                "category": "%command.category%"
+            },
+            {
+                "command": "fileManager.openRight",
+                "title": "%command.openRight%",
+                "category": "%command.category%"
+            },
             {
                 "command": "fileManager.open",
                 "title": "%command.open%",
@@ -151,10 +161,100 @@
                     ],
                     "default": "zip",
                     "markdownDescription": "%config.packFormat%"
+                },
+                "fileManager.visibility.toolbar": {
+                    "type": "boolean",
+                    "scope": "application",
+                    "default": true,
+                    "description": "%config.visibility.toolbar%"
+                },
+                "fileManager.visibility.navigation": {
+                    "type": "boolean",
+                    "scope": "application",
+                    "default": true,
+                    "description": "%config.visibility.navigation%"
+                },
+                "fileManager.visibility.hiddenFiles": {
+                    "type": "boolean",
+                    "scope": "application",
+                    "default": true,
+                    "description": "%config.visibility.hiddenFiles%"
+                },
+                "fileManager.visibility.files": {
+                    "type": "boolean",
+                    "scope": "application",
+                    "default": true,
+                    "description": "%config.visibility.files%"
+                },
+                "fileManager.visibility.archives": {
+                    "type": "boolean",
+                    "scope": "application",
+                    "default": true,
+                    "description": "%config.visibility.archives%"
+                },
+                "fileManager.visibility.attributes": {
+                    "type": "boolean",
+                    "scope": "application",
+                    "default": true,
+                    "description": "%config.visibility.attributes%"
+                },
+                "fileManager.visibility.properties": {
+                    "type": "boolean",
+                    "scope": "application",
+                    "default": true,
+                    "description": "%config.visibility.properties%"
+                },
+                "fileManager.visibility.history": {
+                    "type": "boolean",
+                    "scope": "application",
+                    "default": true,
+                    "description": "%config.visibility.history%"
+                },
+                "fileManager.visibility.favorites": {
+                    "type": "boolean",
+                    "scope": "application",
+                    "default": true,
+                    "description": "%config.visibility.favorites%"
+                },
+                "fileManager.visibility.help": {
+                    "type": "boolean",
+                    "scope": "application",
+                    "default": true,
+                    "description": "%config.visibility.help%"
+                },
+                "fileManager.visibility.breadcrumbs": {
+                    "type": "boolean",
+                    "scope": "application",
+                    "default": true,
+                    "description": "%config.visibility.breadcrumbs%"
+                },
+                "fileManager.visibility.attributesColumn": {
+                    "type": "boolean",
+                    "scope": "application",
+                    "default": true,
+                    "description": "%config.visibility.attributesColumn%"
+                },
+                "fileManager.visibility.functionBar": {
+                    "type": "boolean",
+                    "scope": "application",
+                    "default": true,
+                    "description": "%config.visibility.functionBar%"
                 }
             }
         },
         "menus": {
+            "explorer/context": [
+                {
+                    "command": "fileManager.openLeft",
+                    "when": "resourceScheme == file",
+                    "group": "1_fileManager@1"
+                },
+                {
+                    "command": "fileManager.openRight",
+                    "when": "resourceScheme == file",
+                    "group": "1_fileManager@2"
+                }
+            ],
             "editor/title": [
                 {
                     "command": "fileManager.open",

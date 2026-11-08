@@ -45,6 +45,13 @@ class FileManagerPanel {
     #iconThemeRoot = null;
     /** @type {Partial<Record<Side, string>>} */
     #restoredPaths;
+    #ready = false;
+    /** @type {'first' | 'second'} */
+    #leftIdentity = 'first';
+    static #historyKey = 'folderHistories';
+    static #favoritesKey = 'favoriteFolders';
+    /** @type {{ side: Side, folder: string, focusName: string | null } | null} */
+    #pendingExplorer = null;
 
     /**
      * From another editor: shows the File Manager tab used last, creating one when there is none.
@@ -65,6 +72,54 @@ class FileManagerPanel {
             { enableScripts: true, retainContextWhenHidden: true },
         );
         new FileManagerPanel(panel, context, {});
+    }
+
+    /**
+     * Opens an Explorer entry in the chosen pane of the last active File Manager tab.
+     * @param {vscode.ExtensionContext} context
+     * @param {Side} side
+     * @param {unknown} resource
+     */
+    static async openFromExplorer(context, side, resource) {
+        if (!(resource instanceof vscode.Uri) || resource.scheme !== 'file') {
+            return;
+        }
+        const target = resource.fsPath;
+        let isDirectory = false;
+        try {
+            isDirectory = (await fs.promises.stat(target)).isDirectory();
+        } catch {
+            isDirectory = false;
+        }
+        let instance = FileManagerPanel.#lastActive ?? FileManagerPanel.#instances.values().next().value;
+        if (!instance) {
+            const panel = vscode.window.createWebviewPanel(
+                Config.VIEW_TYPE, Config.PANEL_TITLE, vscode.ViewColumn.Active,
+                { enableScripts: true, retainContextWhenHidden: true },
+            );
+            instance = new FileManagerPanel(panel, context, {});
+        }
+        instance.#pendingExplorer = {
+            side,
+            folder: isDirectory ? target : path.dirname(target),
+            focusName: isDirectory ? null : path.basename(target),
+        };
+        instance.#panel.reveal(instance.#panel.viewColumn);
+        if (instance.#ready) {
+            await instance.#navigateFromExplorer();
+        }
+    }
+
+    /**
+     * Applies the latest Explorer request after the panes finish their initial navigation.
+     */
+    async #navigateFromExplorer() {
+        const request = this.#pendingExplorer;
+        this.#pendingExplorer = null;
+        if (request) {
+            await this.#sessions[request.side].navigate(request.folder, request.focusName);
+            this.#savePaths();
+        }
     }
 
     /**
@@ -117,6 +172,13 @@ class FileManagerPanel {
         this.#windowsShell = Platform.kind === 'win' ? new WindowsShell() : null;
         const reader = new DirectoryReader(this.#windowsShell);
         const post = (/** @type {Record<string, unknown>} */ message) => {
+            if (message.type === 'listing' && message.isNewFolder && typeof message.path === 'string') {
+                this.#updateHistory(message.side === 'right' ? 'right' : 'left', message.path, false);
+            }
+            if (message.type === 'historyMissing' && typeof message.path === 'string') {
+                this.#updateHistory(message.side === 'right' ? 'right' : 'left', message.path, true);
+                return;
+            }
             void this.#panel.webview.postMessage(message);
         };
         this.#sessions = {
@@ -164,9 +226,28 @@ class FileManagerPanel {
         const side = message?.side;
         const session = side === 'left' || side === 'right' ? this.#sessions[side] : null;
         switch (message?.type) {
+            case 'close':
+                this.#panel.dispose();
+                break;
             case 'ready':
                 await this.#start();
                 break;
+            case 'addFavorite': {
+                const folder = this.#sessions[side === 'right' ? 'right' : 'left'].path;
+                const entries = this.#favorites();
+                if (folder && !entries.includes(folder)) {
+                    this.#writeFavorites([...entries, folder]);
+                }
+                break;
+            }
+            case 'clearFavorites':
+                this.#writeFavorites([]);
+                break;
+            case 'clearHistory':
+                if (side === 'left' || side === 'right') {
+                    this.#writeHistory(this.#identity(side), []);
+                }
+                return;
             case 'navigate':
                 if (session && typeof message.path === 'string') {
                     const focusName = typeof message.focusName === 'string' ? message.focusName : null;
@@ -215,6 +296,7 @@ class FileManagerPanel {
      * show what they showed before; a new tab starts where `fileManager.startFolder` says.
      */
     async #start() {
+        this.#ready = false;
         this.#panel.webview.postMessage({
             type: 'init',
             platform: { kind: Platform.kind, isWsl: Platform.isWsl, home: Platform.homeDirectory() },
@@ -229,6 +311,8 @@ class FileManagerPanel {
             const session = this.#sessions[side];
             return session.navigateToFirstReadable(this.#startCandidates(side, session.path));
         }));
+        this.#ready = true;
+        await this.#navigateFromExplorer();
     }
 
     /**
@@ -267,6 +351,10 @@ class FileManagerPanel {
     static #settings() {
         const settings = vscode.workspace.getConfiguration('fileManager');
         return {
+            visibility: Object.fromEntries([
+                'toolbar', 'navigation', 'hiddenFiles', 'files', 'archives', 'attributes', 'properties',
+                'history', 'favorites', 'help', 'breadcrumbs', 'attributesColumn', 'functionBar',
+            ].map((key) => [key, settings.get(`visibility.${key}`, true)])),
             tableScale: settings.get('tableScale', 0),
             hideExtensionOnRename: settings.get('hideExtensionOnRename', true),
             unpackIntoSubfolder: settings.get('unpackIntoSubfolder', false),
@@ -400,8 +488,10 @@ class FileManagerPanel {
         left.side = 'right';
         right.side = 'left';
         this.#sessions = { left: right, right: left };
+        this.#leftIdentity = this.#leftIdentity === 'first' ? 'second' : 'first';
         this.#savePaths();
         void this.#panel.webview.postMessage({ type: 'panelsSwapped' });
+        this.#sendHistories();
     }
 
     /**
@@ -465,6 +555,78 @@ class FileManagerPanel {
         }
         const names = await fs.promises.readdir(dir).catch(() => []);
         return names.length > 0 ? names.sort()[0] : null;
+    }
+
+    /** @param {Side} side */
+    #identity(side) {
+        return side === 'left' ? this.#leftIdentity : this.#leftIdentity === 'first' ? 'second' : 'first';
+    }
+
+    /** @param {'first' | 'second'} identity */
+    #history(identity) {
+        const stored = this.#context.globalState.get(FileManagerPanel.#historyKey);
+        if (!stored || typeof stored !== 'object' || !(identity in stored)) {
+            return [];
+        }
+        /** @type {unknown} */
+        const values = Reflect.get(stored, identity);
+        return Array.isArray(values)
+            ? [...new Set(values.filter((value) => typeof value === 'string' && !value.includes('\0')))].slice(0, 300)
+            : [];
+    }
+
+    /**
+     * @param {Side} side
+     * @param {string} folder
+     * @param {boolean} remove
+     */
+    #updateHistory(side, folder, remove) {
+        const identity = this.#identity(side);
+        const entries = this.#history(identity).filter((entry) => entry !== folder);
+        this.#writeHistory(identity, (remove ? entries : [folder, ...entries]).slice(0, 300));
+    }
+
+    /**
+     * @param {'first' | 'second'} identity
+     * @param {string[]} entries
+     */
+    #writeHistory(identity, entries) {
+        const histories = { first: this.#history('first'), second: this.#history('second') };
+        histories[identity] = entries;
+        void this.#context.globalState.update(FileManagerPanel.#historyKey, histories);
+        for (const instance of FileManagerPanel.#instances) {
+            instance.#sendHistories();
+        }
+    }
+
+    #favorites() {
+        const stored = this.#context.globalState.get(FileManagerPanel.#favoritesKey);
+        return Array.isArray(stored)
+            ? [...new Set(stored.filter((value) => typeof value === 'string' && value && !value.includes('\0')))]
+            : [];
+    }
+
+    /** @param {string[]} entries */
+    #writeFavorites(entries) {
+        void this.#context.globalState.update(FileManagerPanel.#favoritesKey, entries);
+        for (const instance of FileManagerPanel.#instances) {
+            instance.#sendFavorites();
+        }
+    }
+
+    #sendFavorites() {
+        for (const side of /** @type {Side[]} */ (['left', 'right'])) {
+            void this.#panel.webview.postMessage({ type: 'favorites', side, entries: this.#favorites() });
+        }
+    }
+
+    #sendHistories() {
+        this.#sendFavorites();
+        for (const side of /** @type {Side[]} */ (['left', 'right'])) {
+            void this.#panel.webview.postMessage({
+                type: 'history', side, entries: this.#history(this.#identity(side)), leftIdentity: this.#leftIdentity,
+            });
+        }
     }
 
     #savePaths() {

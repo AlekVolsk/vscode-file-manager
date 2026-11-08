@@ -13,7 +13,7 @@
 
 /**
  * The toolbar of a panel. Buttons that do not fit the panel's width go, from the end, into the "⋯" menu; the
- * help button stays at the right edge. A menu entry presses the hidden button, so every action has one handler.
+ * help, favorites and history buttons stay at the right edge. Menu entries press hidden buttons to reuse their handlers.
  */
 class ToolbarView {
     /** @type {ToolbarItem[]} */
@@ -41,21 +41,15 @@ class ToolbarView {
             shortcut: 'Shift+F4',
         },
         { action: 'op', operation: 'rename', icon: SvgIcons.RENAME, titleKey: 'toolbar.rename', shortcut: 'F2' },
+        {},
         { action: 'op', operation: 'copy', icon: SvgIcons.COPY, titleKey: 'toolbar.copy', shortcut: 'F5' },
         { action: 'op', operation: 'move', icon: SvgIcons.MOVE, titleKey: 'toolbar.move', shortcut: 'F6' },
         {
             action: 'op',
-            operation: 'properties',
-            icon: SvgIcons.PROPERTIES,
-            titleKey: 'toolbar.properties',
-            shortcut: 'F3',
-        },
-        {
-            action: 'op',
-            operation: 'attributes',
-            icon: SvgIcons.ATTRIBUTES,
-            titleKey: 'toolbar.attributes',
-            shortcut: 'F9',
+            operation: 'delete',
+            icon: SvgIcons.DELETE,
+            titleKey: 'toolbar.delete',
+            shortcut: 'F8, Shift+F8',
         },
         {},
         { action: 'op', operation: 'pack', icon: SvgIcons.PACK, titleKey: 'toolbar.pack', shortcut: 'Alt+F5' },
@@ -64,10 +58,17 @@ class ToolbarView {
         {},
         {
             action: 'op',
-            operation: 'delete',
-            icon: SvgIcons.DELETE,
-            titleKey: 'toolbar.delete',
-            shortcut: 'F8, Shift+F8',
+            operation: 'attributes',
+            icon: SvgIcons.ATTRIBUTES,
+            titleKey: 'toolbar.attributes',
+            shortcut: 'F9',
+        },
+        {
+            action: 'op',
+            operation: 'properties',
+            icon: SvgIcons.PROPERTIES,
+            titleKey: 'toolbar.properties',
+            shortcut: 'F3',
         },
     ];
 
@@ -79,12 +80,25 @@ class ToolbarView {
     /** @type {((event: MouseEvent) => void) | null} */
     #closeListener = null;
 
-    constructor() {
+    /**
+     * @param {boolean} isWsl
+     */
+    constructor(isWsl) {
         this.#element = document.createElement('div');
         this.#element.className = 'toolbar';
         this.#items = document.createElement('div');
         this.#items.className = 'toolbar-items';
         for (const item of ToolbarView.#ITEMS) {
+            if (item.action === 'home') {
+                this.#items.appendChild(ToolbarView.#button({
+                    action: 'neighbor', icon: SvgIcons.NEIGHBOR, titleKey: 'toolbar.neighbor',
+                }));
+            }
+            if (isWsl && item.action === 'home') {
+                this.#items.appendChild(ToolbarView.#button({
+                    action: 'mounts', icon: SvgIcons.MOUNTS, titleKey: 'toolbar.mounts',
+                }));
+            }
             this.#items.appendChild(item.action ? ToolbarView.#button(item) : ToolbarView.#separator());
         }
         const end = document.createElement('div');
@@ -100,6 +114,14 @@ class ToolbarView {
             icon: SvgIcons.HELP,
             titleKey: 'toolbar.help',
             shortcut: 'F1',
+        }), ToolbarView.#button({
+            action: 'favorites',
+            icon: SvgIcons.FAVORITES,
+            titleKey: 'favorites.title',
+        }), ToolbarView.#button({
+            action: 'history',
+            icon: SvgIcons.CLOCK,
+            titleKey: 'toolbar.history',
         }));
         this.#element.append(this.#items, end);
         new ResizeObserver(() => this.fit()).observe(this.#element);
@@ -113,13 +135,56 @@ class ToolbarView {
     }
 
     /**
+     * Applies control visibility without changing action availability.
+     * @param {Record<string, boolean>} visibility
+     */
+    setVisibility(visibility) {
+        this.#element.hidden = visibility.toolbar === false;
+        for (const button of this.#element.querySelectorAll('button')) {
+            const action = button.dataset.action;
+            const operation = button.dataset.operation;
+            const group = action === 'op'
+                ? (['pack', 'unpack', 'test'].includes(operation ?? '') ? 'archives'
+                    : operation === 'attributes' ? 'attributes'
+                        : operation === 'properties' ? 'properties' : 'files')
+                : action === 'hidden' ? 'hiddenFiles'
+                    : action === 'help' ? 'help'
+                        : action === 'history' ? 'history'
+                            : action === 'favorites' ? 'favorites' : 'navigation';
+            button.dataset.visibilityHidden = String(action !== 'more' && visibility[group] === false);
+        }
+        this.fit();
+    }
+
+    /**
      * Shows every button, then hides from the end until the rest fits; a separator never ends the visible row.
      */
     fit() {
         this.#closeMenu();
-        const children = /** @type {HTMLElement[]} */ ([...this.#items.children]);
+        const all = /** @type {HTMLElement[]} */ ([...this.#items.children]);
+        for (const child of all) {
+            child.hidden = child.dataset.visibilityHidden === 'true';
+        }
+        for (const button of this.#element.querySelectorAll('button')) {
+            button.hidden = button.dataset.visibilityHidden === 'true';
+        }
+        const children = all.filter((child) => child.dataset.visibilityHidden !== 'true');
         for (const child of children) {
             child.hidden = false;
+        }
+        let hasButton = false;
+        for (let index = 0; index < children.length; index++) {
+            const child = children[index];
+            if (child.tagName === 'BUTTON') {
+                hasButton = true;
+            } else {
+                child.hidden = !hasButton || !children.slice(index + 1).some((next) => next.tagName === 'BUTTON');
+                hasButton = false;
+            }
+        }
+        this.#more.hidden = false;
+        if (this.#element.getBoundingClientRect().width === 0) {
+            return;
         }
         let last = children.length - 1;
         while (last >= 0 && this.#items.scrollWidth > this.#items.clientWidth) {
@@ -140,7 +205,7 @@ class ToolbarView {
         }
         const menu = document.createElement('div');
         menu.className = 'menu toolbar-menu';
-        const hiddenButtons = [...this.#items.querySelectorAll('button')].filter((button) => button.hidden);
+        const hiddenButtons = [...this.#items.querySelectorAll('button')].filter((button) => button.hidden && button.dataset.visibilityHidden !== 'true');
         for (const button of hiddenButtons) {
             const entry = document.createElement('button');
             entry.type = 'button';

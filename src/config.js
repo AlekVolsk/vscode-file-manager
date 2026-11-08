@@ -4,6 +4,8 @@
 class Config {
     static VIEW_TYPE = 'fileManager';
     static COMMAND_OPEN = 'fileManager.open';
+    static COMMAND_OPEN_LEFT = 'fileManager.openLeft';
+    static COMMAND_OPEN_RIGHT = 'fileManager.openRight';
     static COMMAND_ACTION = 'fileManager.action';
     static PANEL_TITLE = 'File Manager';
     static GLOBAL_STATE_KEY = 'fileManager.viewState';
