@@ -4,7 +4,7 @@
     "command.open": "File Manager’ı aç",
     "command.openLeft": "Dosya yöneticisinin sol panelinde göster",
     "command.openRight": "Dosya yöneticisinin sağ panelinde göster",
-    "config.customTranslations": "Kendi çeviriniz: anahtarlar ve metinler uzantının `i18n/en.json` dosyasındaki gibi. Boş değilse `#fileManager.language#` yerine kullanılır; eksik anahtarlar İngilizce gösterilir.",
+    "config.customTranslationsFile": "Uzantı ortamındaki JSON çeviri dosyasının mutlak yolu (WSL: Linux yolu). `i18n/en.json` anahtarlarını kullanır; `#fileManager.language#` ayarından önceliklidir. Eksik anahtarlar İngilizcedir. Boş: seçili dil. Dosyayı düzenledikten sonra pencereyi yeniden yükleyin. Gerekli yazı tiplerini kullanıcı yükler.",
     "config.hideExtensionOnRename": "Yeniden adlandırma iletişim kutusu adı uzantısız gösterir; uzantı olduğu gibi kalır.",
     "config.language": "Dosya yöneticisinin dili. `auto`, VS Code dilini izler; o dil için çeviri yoksa İngilizce kullanılır.",
     "config.packFormat": "Paketlerken önerilen arşiv biçimi.",

@@ -4,7 +4,7 @@
     "command.open": "開啟 File Manager",
     "command.openLeft": "在檔案管理員左側面板中顯示",
     "command.openRight": "在檔案管理員右側面板中顯示",
-    "config.customTranslations": "自訂翻譯: 索引鍵與文字和延伸模組的 `i18n/en.json` 相同。非空白時會取代 `#fileManager.language#`；缺少的索引鍵以英文顯示。",
+    "config.customTranslationsFile": "擴充功能主機環境中翻譯 JSON 檔案的絕對路徑（WSL：Linux 路徑）。使用 `i18n/en.json` 中的鍵，優先於 `#fileManager.language#`；缺少的鍵使用英語。留空則使用所選語言。編輯檔案後請重新載入視窗。所需字型由使用者安裝。",
     "config.hideExtensionOnRename": "重新命名對話方塊會顯示不含副檔名的名稱，副檔名保持不變。",
     "config.language": "檔案管理員的語言。`auto` 跟隨 VS Code 的語言；若沒有該語言的翻譯，則使用英文。",
     "config.packFormat": "壓縮時預設提供的封存檔格式。",

@@ -4,7 +4,7 @@
     "command.open": "Open File Manager",
     "command.openLeft": "Show in Left File Manager Pane",
     "command.openRight": "Show in Right File Manager Pane",
-    "config.customTranslations": "Your own translation: keys and texts as in `i18n/en.json` of the extension. When not empty, it is used instead of `#fileManager.language#`; keys it lacks are shown in English.",
+    "config.customTranslationsFile": "Absolute path to a JSON translation file in the extension host environment (WSL: Linux path). Uses the keys from `i18n/en.json` and overrides `#fileManager.language#`; missing keys use English. Empty: use the selected language. Reload Window after editing the file. Required fonts must be installed by the user.",
     "config.hideExtensionOnRename": "The rename dialog shows the name without its extension, which stays as it was.",
     "config.language": "Language of the File Manager. `auto` follows the language of VS Code; without a translation for it, English is used.",
     "config.packFormat": "Archive format offered when packing.",

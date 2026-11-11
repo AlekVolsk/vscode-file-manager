@@ -4,7 +4,7 @@
     "command.open": "Otevřít File Manager",
     "command.openLeft": "Zobrazit v levém panelu správce souborů",
     "command.openRight": "Zobrazit v pravém panelu správce souborů",
-    "config.customTranslations": "Vlastní překlad: klíče a texty jako v `i18n/en.json` rozšíření. Pokud není prázdný, použije se místo `#fileManager.language#`; chybějící klíče se zobrazí anglicky.",
+    "config.customTranslationsFile": "Absolutní cesta k souboru JSON s překladem v prostředí rozšíření (WSL: cesta Linuxu). Klíče z `i18n/en.json`; má přednost před `#fileManager.language#`. Chybějící klíče jsou anglicky. Prázdná cesta: zvolený jazyk. Po úpravě souboru znovu načtěte okno. Potřebná písma instaluje uživatel.",
     "config.hideExtensionOnRename": "Dialog přejmenování zobrazí název bez přípony, která zůstane zachována.",
     "config.language": "Jazyk správce souborů. `auto` se řídí jazykem VS Code; pokud pro něj překlad není, použije se angličtina.",
     "config.packFormat": "Formát archivu nabízený při balení.",

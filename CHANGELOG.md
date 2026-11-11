@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.2.3 - 2026-11-11
+
+- Custom translations load from an absolute JSON file path in `fileManager.customTranslationsFile`; missing keys use English.
+- A button on the right side of the status bar reveals the last active File Manager tab, creating one only when none is open.
+
 ## 1.2.2 — 2026-11-08
 
 - Double-clicking a file or folder icon opens the entry and clears the selection, regardless of its initial selection state.

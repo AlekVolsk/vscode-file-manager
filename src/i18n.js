@@ -7,7 +7,7 @@ const vscode = require('vscode');
 
 /**
  * Texts of the interface in the language of the `fileManager.language` setting, or of VS Code with "auto".
- * A non-empty `fileManager.customTranslations` is a language of its own and wins over the setting. Whatever a
+ * A `fileManager.customTranslationsFile` dictionary takes priority over the language setting. Whatever a
  * dictionary lacks comes from English. The webview gets the same dictionary.
  */
 class I18n {
@@ -28,10 +28,23 @@ class I18n {
     static load(extensionPath) {
         const english = I18n.#read(extensionPath, 'en') ?? {};
         const settings = vscode.workspace.getConfiguration('fileManager');
-        const custom = I18n.#customStrings(settings.get('customTranslations'));
-        if (Object.keys(custom).length > 0) {
+        const file = settings.get('customTranslationsFile');
+        if (typeof file === 'string' && file !== '') {
             I18n.#language = 'custom';
-            I18n.#strings = { ...english, ...custom };
+            I18n.#strings = { ...english };
+            try {
+                if (!path.isAbsolute(file)) {
+                    throw new Error('An absolute path is required.');
+                }
+                const source = JSON.parse(fs.readFileSync(file, 'utf8').replace(/^﻿/, ''));
+                if (!source || typeof source !== 'object' || Array.isArray(source)) {
+                    throw new Error('The JSON root must be an object.');
+                }
+                I18n.#strings = { ...english, ...I18n.#customStrings(source) };
+            } catch (error) {
+                const detail = error instanceof Error ? error.message : String(error);
+                void vscode.window.showErrorMessage(`File Manager: cannot load translation file "${file}": ${detail}`);
+            }
             return;
         }
         const chosen = settings.get('language');

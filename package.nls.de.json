@@ -4,7 +4,7 @@
     "command.open": "File Manager öffnen",
     "command.openLeft": "Im linken Dateimanager-Bereich anzeigen",
     "command.openRight": "Im rechten Dateimanager-Bereich anzeigen",
-    "config.customTranslations": "Eigene Übersetzung: Schlüssel und Texte wie in `i18n/en.json` der Erweiterung. Wenn nicht leer, wird sie statt `#fileManager.language#` verwendet; fehlende Schlüssel erscheinen auf Englisch.",
+    "config.customTranslationsFile": "Absoluter Pfad zur JSON-Übersetzungsdatei auf dem Erweiterungshost (WSL: Linux-Pfad). Schlüssel wie in `i18n/en.json`; hat Vorrang vor `#fileManager.language#`. Fehlende Schlüssel: Englisch. Leer: gewählte Sprache. Nach Dateiänderungen Fenster neu laden. Benötigte Schriftarten installiert der Benutzer.",
     "config.hideExtensionOnRename": "Der Umbenennen-Dialog zeigt den Namen ohne Erweiterung, die unverändert bleibt.",
     "config.language": "Sprache des Dateimanagers. `auto` folgt der Sprache von VS Code; gibt es dafür keine Übersetzung, wird Englisch verwendet.",
     "config.packFormat": "Beim Packen angebotenes Archivformat.",

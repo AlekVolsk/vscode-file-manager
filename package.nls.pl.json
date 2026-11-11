@@ -4,7 +4,7 @@
     "command.open": "Otwórz File Manager",
     "command.openLeft": "Pokaż w lewym panelu menedżera plików",
     "command.openRight": "Pokaż w prawym panelu menedżera plików",
-    "config.customTranslations": "Własne tłumaczenie: klucze i teksty jak w `i18n/en.json` rozszerzenia. Jeśli nie jest puste, zastępuje `#fileManager.language#`; brakujące klucze są wyświetlane po angielsku.",
+    "config.customTranslationsFile": "Bezwzględna ścieżka do pliku JSON z tłumaczeniem na hoście rozszerzenia (WSL: ścieżka Linuksa). Klucze z `i18n/en.json`; zastępuje `#fileManager.language#`. Brakujące klucze po angielsku. Pusta: wybrany język. Po edycji pliku przeładuj okno. Wymagane czcionki instaluje użytkownik.",
     "config.hideExtensionOnRename": "Okno zmiany nazwy pokazuje nazwę bez rozszerzenia, które pozostaje bez zmian.",
     "config.language": "Język menedżera plików. `auto` oznacza język VS Code; jeśli nie ma dla niego tłumaczenia, używany jest angielski.",
     "config.packFormat": "Format archiwum proponowany przy pakowaniu.",

@@ -4,7 +4,7 @@
     "command.open": "Abrir File Manager",
     "command.openLeft": "Mostrar en el panel izquierdo del gestor de archivos",
     "command.openRight": "Mostrar en el panel derecho del gestor de archivos",
-    "config.customTranslations": "Su propia traducción: claves y textos como en `i18n/en.json` de la extensión. Si no está vacía, se usa en lugar de `#fileManager.language#`; las claves que falten se muestran en inglés.",
+    "config.customTranslationsFile": "Ruta absoluta al archivo JSON de traducción en el host de la extensión (WSL: ruta Linux). Claves de `i18n/en.json`; prevalece sobre `#fileManager.language#`. Claves ausentes en inglés. Vacío: idioma seleccionado. Recargue la ventana tras editar el archivo. El usuario instala las fuentes necesarias.",
     "config.hideExtensionOnRename": "El diálogo de cambio de nombre muestra el nombre sin su extensión, que se mantiene.",
     "config.language": "Idioma del administrador de archivos. `auto` sigue el idioma de VS Code; si no hay traducción para él, se usa el inglés.",
     "config.packFormat": "Formato de archivo comprimido propuesto al comprimir.",

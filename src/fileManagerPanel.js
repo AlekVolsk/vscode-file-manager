@@ -28,6 +28,18 @@ class FileManagerPanel {
     static #instances = new Set();
     /** @type {FileManagerPanel | null} */
     static #lastActive = null;
+    /** @type {vscode.Tab | null} */
+    static #pendingTab = null;
+
+    /** Tracks restored webview tabs before their panels are deserialized. */
+    static trackOpenTabs() {
+        const tabs = vscode.window.tabGroups.all.flatMap((group) => group.tabs).filter((tab) =>
+            tab.input instanceof vscode.TabInputWebview
+            && (tab.input.viewType === Config.VIEW_TYPE
+                || tab.input.viewType === `mainThreadWebview-${Config.VIEW_TYPE}`));
+        FileManagerPanel.#pendingTab = tabs.find((tab) => tab.isActive)
+            ?? tabs.find((tab) => tab === FileManagerPanel.#pendingTab) ?? tabs[0] ?? null;
+    }
 
     #panel;
     #context;
@@ -54,15 +66,29 @@ class FileManagerPanel {
     #pendingExplorer = null;
 
     /**
-     * From another editor: shows the File Manager tab used last, creating one when there is none.
-     * From a File Manager tab: opens one more next to it.
+     * Reveals the last File Manager tab; opens another from an active File Manager unless reuseExisting is set.
      * @param {vscode.ExtensionContext} context
+     * @param {boolean} reuseExisting
      */
-    static open(context) {
+    static async open(context, reuseExisting = false) {
         const fromFileManager = [...FileManagerPanel.#instances].some((instance) => instance.#panel.active);
         const existing = FileManagerPanel.#lastActive ?? FileManagerPanel.#instances.values().next().value;
-        if (existing && !fromFileManager) {
+        if (existing && (reuseExisting || !fromFileManager)) {
             existing.#panel.reveal(existing.#panel.viewColumn);
+            return;
+        }
+        FileManagerPanel.trackOpenTabs();
+        const pending = FileManagerPanel.#pendingTab;
+        if (!existing && pending) {
+            await vscode.commands.executeCommand('workbench.action.focusFirstEditorGroup');
+            const groupIndex = vscode.window.tabGroups.all.indexOf(pending.group);
+            for (let index = 0; index < groupIndex; index++) {
+                await vscode.commands.executeCommand('workbench.action.focusNextGroup');
+            }
+            const tabCount = pending.group.tabs.length;
+            for (let index = 0; index < tabCount && !pending.isActive; index++) {
+                await vscode.commands.executeCommand('workbench.action.nextEditorInGroup');
+            }
             return;
         }
         const panel = vscode.window.createWebviewPanel(
@@ -203,7 +229,7 @@ class FileManagerPanel {
                     void this.#sendIconTheme();
                 }
                 if (event.affectsConfiguration('fileManager.language')
-                    || event.affectsConfiguration('fileManager.customTranslations')) {
+                    || event.affectsConfiguration('fileManager.customTranslationsFile')) {
                     I18n.load(context.extensionPath);
                     panel.webview.html = WebviewHtml.render(panel.webview, context.extensionUri);
                 } else if (event.affectsConfiguration('fileManager')) {

@@ -20,7 +20,9 @@ Requires VS Code 1.94 or later. In a remote window (WSL, SSH, containers) the ex
 
 - The File Manager button in the title bar of any editor tab shows the File Manager tab used last, or opens one.
 - The same button on a File Manager tab opens one more next to it.
+- The button on the right side of the status bar reveals the last active File Manager tab, creating one only if none is open.
 - **File Manager: Open File Manager** in the Command Palette.
+- In Explorer, **Open in Left Panel / Open in Right Panel** opens a folder or reveals a file in the chosen panel of the last used File Manager.
 
 A new tab opens both panels in the folder chosen by the `fileManager.startFolder` setting: the folders last open in this workspace (the default), the home folder, the project folder or the root. A tab restored after a window reload reopens its own folders.
 
@@ -45,7 +47,11 @@ A new tab opens both panels in the folder chosen by the `fileManager.startFolder
 - New folder, new file, rename, copy, move, properties, attributes.
 - Pack, unpack, test archives.
 - Delete; with Shift, permanently.
-- Help (`F1`), always at the right edge.
+- Help (`F1`), favorites and folder history.
+
+Favorites are shared by all panels and tabs; add the current folder, open a saved folder or clear the list. Each logical panel keeps its own persistent history of up to 300 unique folders, shared across tabs; `Ctrl+U` swaps the panels together with their histories.
+
+The bottom function button bar provides clickable F2–F10 actions, including Shift+F4, for the active panel.
 
 Buttons that do not fit a narrow panel go, from the end, into the `⋯` menu next to Help.
 
@@ -104,7 +110,7 @@ Drag entries to the other panel to move them; hold Ctrl at the drop to copy. Dro
 - **Name conflicts** ask, for one file or for all: overwrite, keep both (`name (1).ext`), skip, cancel. Overwriting replaces the file in place.
 - **Errors** on single files ask: retry, skip, skip all, abort.
 - **Progress** shows in a corner of the tab, with the current file for big files, totals, speed and Cancel; the panels stay usable.
-- **Delete** always asks. Without a trash, or with Shift, a second confirmation follows, and its button unlocks after five seconds. The trash is used where VS Code reaches one: in a local window, not in WSL or other remote windows.
+- **Delete** always asks. Without a trash, or with Shift, the same dialog confirms permanent deletion with a three-second button countdown. The trash is used where VS Code reaches one: in a local window, not in WSL or other remote windows.
 - **Rename** opens a dialog; "Hide file extension" (on by default, kept in the `fileManager.hideExtensionOnRename` setting) leaves the extension as it is.
 - **Names** are checked before anything is written. Under Windows and WSL the Windows rules apply: no `< > : " / \ | ? *`, no reserved names such as `CON`, no trailing dot or space.
 - **Attributes**: permission bits with an octal field on Linux and macOS, Read-only, Hidden, System and Archive on Windows. Only the bits changed in the dialog are applied, also to a selection with different attributes, and optionally to everything inside folders. Links are not changed.
@@ -129,12 +135,13 @@ Not supported yet:
 All settings are in **Settings → Extensions → File Manager** and apply to both panels of every tab. The language settings are user settings only, so a workspace cannot change them.
 
 - `fileManager.language` — language of the interface; `auto` follows VS Code.
-- `fileManager.customTranslations` — your own dictionary, see [Languages](#languages).
+- `fileManager.customTranslationsFile` — absolute path to your JSON translation file, see [Languages](#languages).
 - `fileManager.startFolder` — `last`, `home`, `project` or `root`: where a new tab opens.
 - `fileManager.tableScale` — pixels added to the editor font size in the tables; Ctrl+mouse wheel changes it.
 - `fileManager.hideExtensionOnRename` — the rename dialog shows the name without its extension.
 - `fileManager.unpackIntoSubfolder` — unpack into a subfolder named after the archive.
 - `fileManager.packFormat` — `zip`, `tgz` or `tar`, offered when packing.
+- `fileManager.visibility.*` — show or hide the toolbar, button groups, help, history, favorites, breadcrumbs, attributes column and function button bar.
 
 ## Languages
 
@@ -142,7 +149,7 @@ English, Čeština, Deutsch, Español, Français, Italiano, 日本語, 한국어
 
 *The translations were made with an AI tool and may be inaccurate. A native speaker is always welcome to send a pull request with corrections to `i18n/<language>.json` and `package.nls.<language>.json`.*
 
-For a language not in the list, put a dictionary into `fileManager.customTranslations`: the keys and texts as in [`i18n/en.json`](i18n/en.json), `{name}` placeholders kept. A non-empty dictionary is used instead of `fileManager.language`; keys it lacks are shown in English.
+Set `fileManager.customTranslationsFile` to the absolute path of a UTF-8 JSON file: keys and string values as in [`i18n/en.json`](i18n/en.json), with `{name}` placeholders preserved. For example, use `i18n/ko.json` for Korean, not `package.nls.ko.json`, which translates VS Code commands and settings. The path belongs to the extension host environment: in WSL, use a Linux path. The file takes priority over `fileManager.language`, including for languages not in the list; missing keys use English. An empty object also uses English. An empty path uses the selected language. An unreadable file, invalid JSON or a non-object root produces an error notification and an English interface. Non-string values are ignored. Changing the setting updates open File Manager tabs; after editing the file itself, run Reload Window. Users are responsible for installing the fonts required by their translation.
 
 ## Platforms
 

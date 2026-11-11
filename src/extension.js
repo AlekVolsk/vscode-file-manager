@@ -14,9 +14,22 @@ const { I18n } = require('./i18n');
  */
 function activate(context) {
     I18n.load(context.extensionPath);
-    void moveViewStateToSettings(context);
+    FileManagerPanel.trackOpenTabs();
     context.subscriptions.push(
+        vscode.window.tabGroups.onDidChangeTabs(() => FileManagerPanel.trackOpenTabs()),
+        vscode.window.tabGroups.onDidChangeTabGroups(() => FileManagerPanel.trackOpenTabs()),
+    );
+    void moveViewStateToSettings(context);
+    const launcher = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Right);
+    launcher.name = Config.PANEL_TITLE;
+    launcher.text = '$(folder-library)';
+    launcher.tooltip = Config.PANEL_TITLE;
+    launcher.command = Config.COMMAND_REVEAL;
+    launcher.show();
+    context.subscriptions.push(
+        launcher,
         vscode.commands.registerCommand(Config.COMMAND_OPEN, () => FileManagerPanel.open(context)),
+        vscode.commands.registerCommand(Config.COMMAND_REVEAL, () => FileManagerPanel.open(context, true)),
         vscode.commands.registerCommand(Config.COMMAND_OPEN_LEFT,
             (resource) => FileManagerPanel.openFromExplorer(context, 'left', resource)),
         vscode.commands.registerCommand(Config.COMMAND_OPEN_RIGHT,

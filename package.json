@@ -2,7 +2,7 @@
     "name": "file-manager",
     "displayName": "File Manager",
     "description": "Two-panel file manager in an editor tab, in the spirit of Total Commander and Midnight Commander.",
-    "version": "1.2.2",
+    "version": "1.2.3",
     "publisher": "AlekVolsk",
     "author": "AlekVolsk",
     "license": "BSD-3-Clause",
@@ -28,6 +28,7 @@
     ],
     "main": "./src/extension.js",
     "activationEvents": [
+        "onStartupFinished",
         "onWebviewPanel:fileManager"
     ],
     "scripts": {
@@ -104,14 +105,11 @@
                     "default": "auto",
                     "markdownDescription": "%config.language%"
                 },
-                "fileManager.customTranslations": {
-                    "type": "object",
+                "fileManager.customTranslationsFile": {
+                    "type": "string",
                     "scope": "application",
-                    "additionalProperties": {
-                        "type": "string"
-                    },
-                    "default": {},
-                    "markdownDescription": "%config.customTranslations%"
+                    "default": "",
+                    "markdownDescription": "%config.customTranslationsFile%"
                 },
                 "fileManager.startFolder": {
                     "type": "string",
