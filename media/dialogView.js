@@ -85,6 +85,16 @@ class DialogView {
     }
 
     /**
+     * @param {HTMLButtonElement} button
+     * @param {boolean} equalWidths
+     * @returns {number}
+     */
+    static #buttonColumn(button, equalWidths) {
+        const siblings = Array.from(button.parentElement?.children ?? []);
+        return siblings.indexOf(button) + (equalWidths ? 3 - siblings.length : 0);
+    }
+
+    /**
      * @param {DialogOptions} options
      * @returns {Promise<DialogResult>}
      */
@@ -230,6 +240,9 @@ class DialogView {
                         clearInterval(timer);
                         element.disabled = false;
                         element.textContent = button.label;
+                        if (button.primary) {
+                            element.focus();
+                        }
                     }, 1000);
                     timers.push(timer);
                 }
@@ -239,6 +252,38 @@ class DialogView {
 
             dialog.addEventListener('keydown', (event) => {
                 event.stopPropagation();
+                if (event.key === 'Tab' && !event.ctrlKey && !event.altKey && !event.metaKey) {
+                    const controls = Array.from(dialog.querySelectorAll('button, input, select, textarea, [tabindex]'))
+                        .filter((element) => element instanceof HTMLElement && element.tabIndex >= 0
+                            && !element.matches(':disabled') && element.getClientRects().length > 0);
+                    const index = controls.findIndex((element) => element === document.activeElement);
+                    const direction = event.shiftKey ? -1 : 1;
+                    const next = index < 0 ? (event.shiftKey ? controls.length - 1 : 0)
+                        : (index + direction + controls.length) % controls.length;
+                    event.preventDefault();
+                    const target = controls[next];
+                    if (target instanceof HTMLElement) {
+                        target.focus();
+                    }
+                    return;
+                }
+                if (['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown'].includes(event.key)
+                    && !event.ctrlKey && !event.altKey && !event.metaKey && !event.shiftKey) {
+                    const current = Array.from(buttons.values()).find((button) => button === document.activeElement);
+                    if (current) {
+                        const horizontal = event.key === 'ArrowLeft' || event.key === 'ArrowRight';
+                        const candidates = Array.from(buttons.values()).filter((button) => !button.disabled
+                            && button.getClientRects().length > 0
+                            && (horizontal ? button.parentElement === current.parentElement
+                                : DialogView.#buttonColumn(button, !!options.equalButtonWidths)
+                                    === DialogView.#buttonColumn(current, !!options.equalButtonWidths)));
+                        const index = candidates.indexOf(current);
+                        const direction = event.key === 'ArrowLeft' || event.key === 'ArrowUp' ? -1 : 1;
+                        candidates[(index + direction + candidates.length) % candidates.length]?.focus();
+                        event.preventDefault();
+                        return;
+                    }
+                }
                 if (event.key === 'Escape') {
                     event.preventDefault();
                     if (!busy) {
@@ -261,7 +306,9 @@ class DialogView {
             } else {
                 const primary = options.buttons.find((button) => button.primary);
                 const primaryElement = primary ? buttons.get(primary.action) : undefined;
-                (primaryElement && !primaryElement.disabled ? primaryElement : dialog).focus();
+                const firstAvailable = Array.from(buttons.values())
+                    .find((button) => !button.disabled && button.getClientRects().length > 0);
+                (primaryElement && !primaryElement.disabled ? primaryElement : firstAvailable ?? dialog).focus();
             }
         });
     }

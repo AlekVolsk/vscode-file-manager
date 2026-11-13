@@ -121,7 +121,7 @@ class ToolbarView {
         }), ToolbarView.#button({
             action: 'history',
             icon: SvgIcons.CLOCK,
-            titleKey: 'toolbar.history',
+            titleKey: 'history.title',
         }));
         this.#element.append(this.#items, end);
         new ResizeObserver(() => this.fit()).observe(this.#element);

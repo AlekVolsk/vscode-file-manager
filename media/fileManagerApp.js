@@ -63,6 +63,10 @@ class FileManagerApp {
     #icons;
     /** @type {HTMLElement} */
     #root;
+    #listMenu = new ListContextMenu();
+    #canReveal = false;
+    /** @type {{ name: string, path: string }[]} */
+    #workspaceFolders = [];
     /** @type {{ left: PanelView, right: PanelView } | null} */
     #panels = null;
     /** @type {'left' | 'right'} */
@@ -117,6 +121,13 @@ class FileManagerApp {
         window.addEventListener('message', (event) => this.#onMessage(event.data));
         document.addEventListener('keydown', (event) => this.#onKeyDown(event));
         document.addEventListener('contextmenu', (event) => this.#onContextMenu(event));
+        document.addEventListener('focusin', (event) => {
+            const focused = event.target instanceof HTMLElement && event.target.matches('.viewport');
+            this.#api.postMessage({ type: 'panelFocus', focused });
+        });
+        document.addEventListener('focusout', () => {
+            this.#api.postMessage({ type: 'panelFocus', focused: false });
+        });
         document.addEventListener('wheel', (event) => this.#onWheel(event), { passive: false });
         new MutationObserver(() => this.#rerenderIcons())
             .observe(document.body, { attributes: true, attributeFilter: ['class'] });
@@ -150,6 +161,7 @@ class FileManagerApp {
             return;
         }
         if (message?.type === 'workspaceFolders' && this.#panels) {
+            this.#workspaceFolders = message.folders;
             this.#panels.left.setWorkspaceFolders(message.folders);
             this.#panels.right.setWorkspaceFolders(message.folders);
             return;
@@ -190,6 +202,7 @@ class FileManagerApp {
                 this.#scheduleSave();
                 break;
             case 'listing':
+                this.#listMenu.close();
                 panel.setListing(message);
                 if (message.isNewFolder) {
                     this.#scheduleSave();
@@ -200,6 +213,9 @@ class FileManagerApp {
                 break;
             case 'folderSize':
                 panel.setFolderSize(message);
+                break;
+            case 'folderSizesReset':
+                panel.resetFolderSizes();
                 break;
             case 'folderSizesCancelled':
                 panel.folderSizesCancelled();
@@ -333,7 +349,11 @@ class FileManagerApp {
             return;
         }
         const panel = this.#panels[this.#active];
-        if (action === 'close') {
+        if (action === 'refresh') {
+            if (document.activeElement?.matches('.viewport')) {
+                this.#api.postMessage({ type: 'refresh', side: this.#active });
+            }
+        } else if (action === 'close') {
             this.#api.postMessage({ type: 'close' });
         } else if (action === 'help') {
             await this.#showHelp();
@@ -381,21 +401,113 @@ class FileManagerApp {
     }
 
     /**
-     * VS Code shows its Cut/Copy/Paste menu over a webview unless the page has handled the event. It stays in text
-     * fields, where it works; elsewhere there is nothing to cut, copy or paste.
+     * Preserves the native text input menu and routes file list targets to the custom action menu.
      * @param {MouseEvent} event
      */
     #onContextMenu(event) {
         const target = /** @type {HTMLElement} */ (event.target);
-        if (!target.closest('input[type="text"]')) {
-            event.preventDefault();
+        if (target.closest('input[type="text"]')) {
+            this.#listMenu.close();
+            return;
         }
+        event.preventDefault();
+        this.#listMenu.close();
+        if (!this.#panels || this.#dialogs.isOpen || !target.closest('.viewport')) {
+            return;
+        }
+        const side = this.#panels.left.element.contains(target) ? 'left' : 'right';
+        const panel = this.#panels[side];
+        const keyboard = event.button === -1 || (event.clientX === 0 && event.clientY === 0);
+        const context = panel.contextTarget(target, keyboard);
+        if (!context) {
+            return;
+        }
+        this.#activate(side);
+        const { kind, names, entries, path } = context;
+        const self = kind !== 'entry';
+        const titlePath = kind === 'parent' ? panel.path ?? path : path;
+        const title = self ? `${kind === 'parent' ? '../' : ''}${Format.lastSegment(titlePath) || titlePath}`
+            : names.length > 1 ? I18n.t('context.selected', { count: names.length }) : names[0];
+        const separator = this.#platformKind === 'win' ? '\\' : '/';
+        const paths = self ? [path] : names.map((name) => `${path.replace(/[\\/]$/, '')}${separator}${name}`);
+        const normalize = (/** @type {string} */ value) => this.#platformKind === 'win'
+            ? value.replace(/\\/g, '/').toLowerCase() : value;
+        const workspace = this.#workspaceFolders.find((folder) => {
+            const base = normalize(folder.path).replace(/\/$/, '');
+            return normalize(path) === base || normalize(path).startsWith(`${base}/`);
+        });
+        const item = (/** @type {string} */ key, /** @type {(shift: boolean) => void} */ run) =>
+            ({ label: I18n.t(key, { shift: 'Shift' }), run });
+        const operation = (/** @type {OperationAction} */ action) => item(
+            action === 'delete' ? 'button.delete' : `toolbar.${action}`, (shiftKey) => {
+            if (!self) {
+                void this.#operations.run(action, side, { shiftKey });
+                return;
+            }
+            const name = Format.lastSegment(path) || path;
+            const proxy = /** @type {PanelView} */ (/** @type {unknown} */ ({
+                canOperate: true, path, operationNames: [name], operationEntries: [],
+                cursorEntry: { name, isDir: true }, focus: () => panel.focus(),
+                focusEntry: () => panel.focus(), deselect: () => {},
+            }));
+            void this.#operations.runTarget(action, side, kind, proxy, { shiftKey });
+        });
+        const clipboard = (/** @type {string} */ key, /** @type {string[]} */ values) => item(key, () => {
+            this.#api.postMessage({ type: 'copyContextText', text: values.join('\n') });
+        });
+        const writable = !panel.inArchive;
+        const opening = [];
+        if (!self && writable && entries.some((entry) => !entry.isDir)) {
+            opening.push(item('functionBar.open', () => {
+                for (const entry of entries.filter((entry) => !entry.isDir)) {
+                    this.#api.postMessage({ type: 'openFile', side, name: entry.name, asFile: true });
+                }
+            }));
+        }
+        if (writable && this.#canReveal) {
+            opening.push(item('toolbar.reveal', () => this.#api.postMessage({
+                type: 'revealContext', side, contextTarget: self ? kind : undefined, names,
+            })));
+        }
+        const copying = [clipboard('context.copyName', self ? [Format.lastSegment(path) || path] : names)];
+        if (workspace && writable) {
+            copying.push(clipboard('context.copyRelativePath', paths.map((value) =>
+                value.slice(workspace.path.replace(/[\\/]$/, '').length).replace(/^[\\/]/, '') || '.')));
+        }
+        copying.push(clipboard('context.copyFullPath', paths));
+        const root = self && (path === '/' || /^[a-z]:[\\/]?$/i.test(path));
+        const changing = writable && !root ? [operation('copy'), operation('move')] : [];
+        if (writable && !root) {
+            changing.push(operation('rename'));
+        }
+        if (writable && !root) {
+            changing.push(operation('delete'));
+        }
+        const archives = [];
+        if (writable && !self && entries.length > 0 && entries.every((entry) =>
+            !entry.isDir && /\.(zip|tar\.gz|tgz|tar)$/i.test(entry.name))) {
+            archives.push(operation('unpack'));
+        }
+        if (writable && !root) {
+            archives.push(operation('pack'));
+        } else if (panel.inArchive) {
+            archives.push(item('toolbar.test', () => void this.#operations.testCurrentArchive(side)));
+        }
+        const details = writable ? [operation('properties')] : [];
+        if (writable && (self || names.length === 1)) {
+            details.unshift(operation('attributes'));
+        }
+        this.#listMenu.show(event, title, [opening, copying, changing, archives,
+            writable ? [operation('newFolder'), operation('newFile')] : [], details], () => panel.focus());
     }
 
     /**
      * @param {KeyboardEvent} event
      */
     #onKeyDown(event) {
+        if (this.#listMenu.isOpen) {
+            return;
+        }
         if (!this.#panels || this.#dialogs.isOpen) {
             return;
         }

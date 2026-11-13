@@ -158,7 +158,8 @@
     "help.key.f9": "Attributi",
     "help.key.insert": "Seleziona o deseleziona, cursore giù",
     "help.key.move": "Sposta il cursore",
-    "help.key.scale": "Ridimensiona le tabelle",
+    "help.key.refresh": "Aggiorna il pannello",
+    "help.key.scale": "Ridimensiona i pannelli",
     "help.key.shiftF4": "Nuovo file",
     "help.key.shiftF8": "Elimina definitivamente",
     "help.key.space": "Seleziona o deseleziona; su una cartella, calcolane la dimensione",
@@ -287,5 +288,9 @@
     "type.linkToFolder": "Collegamento a una cartella",
     "type.special": "File speciale (dispositivo, socket o pipe)",
     "unpack.chooseArchives": "Scegli archivi zip, tar o tar.gz da estrarre.",
-    "unpack.intoSubfolder": "In una sottocartella con il nome dell’archivio"
+    "unpack.intoSubfolder": "In una sottocartella con il nome dell’archivio",
+    "context.selected": "Selezionati: {count}",
+    "context.copyName": "Copia nome",
+    "context.copyRelativePath": "Copia percorso relativo all’area di lavoro",
+    "context.copyFullPath": "Copia percorso completo"
 }

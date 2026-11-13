@@ -35,6 +35,8 @@ class OperationsController {
     static #LISTED_NAMES_MAX = 10;
 
     #context;
+    /** @type {{ side: 'left' | 'right', kind: 'current' | 'parent', panel: PanelView } | null} */
+    #target = null;
     #dialogs;
     #progress;
     #trashAvailable = false;
@@ -64,46 +66,54 @@ class OperationsController {
         this.#trashAvailable = available;
     }
 
+    /** @param {'left' | 'right'} side */
+    async testCurrentArchive(side) {
+        const result = await this.#request({ type: 'testCurrentArchive', side });
+        if (!result.ok) {
+            await this.#notice(I18n.t('dialog.test'), result.error ?? I18n.t('common.failed'));
+        }
+    }
+
     /**
      * @param {OperationAction} action
      * @param {'left' | 'right'} side
      * @param {{ shiftKey: boolean }} modifiers
      */
-    run(action, side, modifiers) {
-        if (!this.#context.panel(side).canOperate) {
+    async run(action, side, modifiers) {
+        if (!this.#panel(side).canOperate) {
             return;
         }
         switch (action) {
             case 'newFolder':
-                void this.#create(side, 'folder');
+                await this.#create(side, 'folder');
                 break;
             case 'newFile':
-                void this.#create(side, 'file');
+                await this.#create(side, 'file');
                 break;
             case 'rename':
-                void this.#rename(side);
+                await this.#rename(side);
                 break;
             case 'copy':
             case 'move':
-                void this.#transfer(side, action === 'move');
+                await this.#transfer(side, action === 'move');
                 break;
             case 'attributes':
-                void this.#attributes(side);
+                await this.#attributes(side);
                 break;
             case 'properties':
-                void this.#properties(side);
+                await this.#properties(side);
                 break;
             case 'pack':
-                void this.#pack(side);
+                await this.#pack(side);
                 break;
             case 'unpack':
-                void this.#unpack(side);
+                await this.#unpack(side);
                 break;
             case 'test':
-                void this.#test(side);
+                await this.#test(side);
                 break;
             case 'delete':
-                void this.#delete(side, modifiers.shiftKey);
+                await this.#delete(side, modifiers.shiftKey);
                 break;
         }
     }
@@ -146,7 +156,7 @@ class OperationsController {
      * @param {'folder' | 'file'} kind
      */
     async #create(side, kind) {
-        const panel = this.#context.panel(side);
+        const panel = this.#panel(side);
         if (!panel.canOperate) {
             return;
         }
@@ -176,7 +186,7 @@ class OperationsController {
      * @param {'left' | 'right'} side
      */
     async #rename(side) {
-        const panel = this.#context.panel(side);
+        const panel = this.#panel(side);
         const entry = panel.cursorEntry;
         if (!entry) {
             return;
@@ -244,7 +254,7 @@ class OperationsController {
      * @param {DropTarget} [dropTarget]
      */
     async #transfer(side, move, draggedNames, dropTarget) {
-        const panel = this.#context.panel(side);
+        const panel = this.#panel(side);
         const names = draggedNames ?? panel.operationNames;
         if (names.length === 0) {
             return;
@@ -284,8 +294,20 @@ class OperationsController {
      * @param {'left' | 'right'} side
      */
     async #attributes(side) {
-        const panel = this.#context.panel(side);
-        const entries = panel.operationEntries;
+        const panel = this.#panel(side);
+        let entries = panel.operationEntries;
+        if (this.#target?.side === side) {
+            const result = await this.#request({ type: 'properties', side, names: panel.operationNames });
+            this.#context.post({ type: 'cancelProperties', requestId: this.#nextRequestId - 1 });
+            if (!result.ok) {
+                await this.#notice(I18n.t('dialog.attributes'), result.error ?? I18n.t('common.failed'));
+                return;
+            }
+            entries = (result.properties ?? []).map((entry) => ({
+                name: entry.name, isDir: entry.kind === 'folder', mode: entry.mode,
+                winAttributes: entry.winAttributes,
+            }));
+        }
         if (entries.length === 0) {
             return;
         }
@@ -322,7 +344,7 @@ class OperationsController {
      * @param {'left' | 'right'} side
      */
     async #properties(side) {
-        const panel = this.#context.panel(side);
+        const panel = this.#panel(side);
         const names = panel.operationNames;
         if (names.length === 0) {
             return;
@@ -352,7 +374,7 @@ class OperationsController {
      * @param {'left' | 'right'} side
      */
     async #pack(side) {
-        const panel = this.#context.panel(side);
+        const panel = this.#panel(side);
         const names = panel.operationNames;
         if (names.length === 0) {
             return;
@@ -422,7 +444,7 @@ class OperationsController {
      * @param {'left' | 'right'} side
      */
     async #unpack(side) {
-        const panel = this.#context.panel(side);
+        const panel = this.#panel(side);
         const names = panel.operationNames.filter((name) => OperationsController.#ARCHIVE_NAME.test(name));
         if (names.length === 0) {
             await this.#notice(I18n.t('dialog.unpack'), I18n.t('unpack.chooseArchives'));
@@ -465,7 +487,7 @@ class OperationsController {
      * @param {'left' | 'right'} side
      */
     async #test(side) {
-        const panel = this.#context.panel(side);
+        const panel = this.#panel(side);
         const names = panel.operationNames.filter((name) => OperationsController.#ARCHIVE_NAME.test(name));
         if (names.length === 0) {
             await this.#notice(I18n.t('dialog.test'), I18n.t('test.chooseArchives'));
@@ -485,7 +507,7 @@ class OperationsController {
      * @param {boolean} shiftKey
      */
     async #delete(side, shiftKey) {
-        const panel = this.#context.panel(side);
+        const panel = this.#panel(side);
         const names = panel.operationNames;
         if (names.length === 0) {
             return;
@@ -660,6 +682,33 @@ class OperationsController {
     }
 
     /**
+     * @param {'left' | 'right'} side
+     * @returns {PanelView}
+     */
+    #panel(side) {
+        return this.#target?.side === side ? this.#target.panel : this.#context.panel(side);
+    }
+
+    /**
+     * @param {OperationAction} action
+     * @param {'left' | 'right'} side
+     * @param {'current' | 'parent'} kind
+     * @param {PanelView} panel
+     * @param {{ shiftKey: boolean }} modifiers
+     */
+    async runTarget(action, side, kind, panel, modifiers) {
+        if (this.#target) {
+            return;
+        }
+        this.#target = { side, kind, panel };
+        try {
+            await this.run(action, side, modifiers);
+        } finally {
+            this.#target = null;
+        }
+    }
+
+    /**
      * @param {Record<string, unknown>} message
      * @param {number} [requestId]  given when later messages of the host refer to this request
      * @returns {Promise<RequestResult>}
@@ -667,7 +716,7 @@ class OperationsController {
     #request(message, requestId = this.#nextRequestId++) {
         return new Promise((resolve) => {
             this.#pendingRequests.set(requestId, resolve);
-            this.#context.post({ ...message, requestId });
+            this.#context.post({ ...message, requestId, contextTarget: this.#target?.kind });
         });
     }
 

@@ -20,6 +20,7 @@ class WebviewHtml {
         'dragController.js',
         'toolbarView.js',
         'panelView.js',
+        'listContextMenu.js',
         'fileManagerApp.js',
         'main.js',
     ];

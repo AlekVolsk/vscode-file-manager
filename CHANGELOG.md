@@ -1,5 +1,14 @@
 # Changelog
 
+## 1.3.0 - 2026-11-13
+
+- File list context menus support selection-aware file operations, clipboard paths and keyboard navigation.
+- Deselecting a folder with Space does not start another folder size calculation. Requests for folders already being counted or waiting in the queue do not enqueue duplicate calculations.
+- Dialog keyboard navigation cycles through visible, enabled controls with Tab and through button rows and columns with arrow keys. Focused and pressed buttons show an inset outline in their text color.
+- The primary dialog button receives focus when its confirmation countdown finishes.
+- Ctrl+R manually refreshes the focused panel if automatic updates stall, resetting folder sizes.
+- Corrected help translations and completed new strings across all 14 supported languages.
+
 ## 1.2.3 - 2026-11-11
 
 - Custom translations load from an absolute JSON file path in `fileManager.customTranslationsFile`; missing keys use English.

@@ -158,7 +158,8 @@
     "help.key.f9": "屬性",
     "help.key.insert": "選取或取消選取，游標下移",
     "help.key.move": "移動游標",
-    "help.key.scale": "縮放表格",
+    "help.key.refresh": "重新整理面板",
+    "help.key.scale": "縮放面板",
     "help.key.shiftF4": "新增檔案",
     "help.key.shiftF8": "永久刪除",
     "help.key.space": "選取或取消選取；在資料夾上計算其大小",
@@ -287,5 +288,9 @@
     "type.linkToFolder": "指向資料夾的連結",
     "type.special": "特殊檔案 (裝置、通訊端或管道)",
     "unpack.chooseArchives": "請選擇要解壓縮的 zip、tar 或 tar.gz 封存檔。",
-    "unpack.intoSubfolder": "解壓縮到以封存檔命名的子資料夾"
+    "unpack.intoSubfolder": "解壓縮到以封存檔命名的子資料夾",
+    "context.selected": "已選取：{count}",
+    "context.copyName": "複製名稱",
+    "context.copyRelativePath": "複製相對於工作區的路徑",
+    "context.copyFullPath": "複製完整路徑"
 }

@@ -20,6 +20,7 @@ class HelpView {
         ['Esc', 'help.key.esc'],
         ['Ctrl+U', 'help.key.swap'],
         ['Ctrl+wheel', 'help.key.scale'],
+        ['Ctrl+R', 'help.key.refresh'],
         ['F1', 'help.key.f1'],
         ['F2', 'help.key.f2'],
         ['F3', 'help.key.f3'],
@@ -102,6 +103,8 @@ class HelpView {
     static #toolbarSection() {
         const buttons = [
             [SvgIcons.PARENT, 'help.key.backspace'],
+            [SvgIcons.NEIGHBOR, 'toolbar.neighbor'],
+            [SvgIcons.MOUNTS, 'toolbar.mounts'],
             [SvgIcons.HOME, 'toolbar.home'],
             [SvgIcons.PROJECT, 'help.toolbar.project'],
             [SvgIcons.ROOT, 'help.toolbar.root'],
@@ -119,7 +122,8 @@ class HelpView {
             [SvgIcons.TEST, 'help.toolbar.test'],
             [SvgIcons.DELETE, 'help.toolbar.delete'],
             [SvgIcons.HELP, 'help.toolbar.help'],
-            [SvgIcons.MORE, 'toolbar.more'],
+            [SvgIcons.FAVORITES, 'favorites.title'],
+            [SvgIcons.CLOCK, 'history.title'],
         ];
         const section = document.createElement('section');
         const heading = document.createElement('div');

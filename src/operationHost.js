@@ -84,6 +84,7 @@ class OperationHost {
             case 'startPack':
                 void this.#reply(message.requestId, () => this.#startPack(message));
                 return true;
+            case 'testCurrentArchive':
             case 'startTest':
                 void this.#reply(message.requestId, () => this.#startTest(message));
                 return true;
@@ -124,8 +125,10 @@ class OperationHost {
      * @returns {Promise<{ properties: import('./propertiesReader').EntryProperties[] }>}
      */
     async #properties(message) {
-        const dir = this.#folderOf(message.side);
-        const names = OperationHost.#requireEntryNames(message.names);
+        const folder = this.#folderOf(message.side, message.contextTarget);
+        const dir = message.contextTarget ? path.dirname(folder) : folder;
+        const names = message.contextTarget ? [path.basename(folder) || '.']
+            : OperationHost.#requireEntryNames(message.names);
         const properties = await this.#propertiesReader.describe(dir, names);
         const folders = properties
             .filter((entry) => entry.kind === 'folder')
@@ -189,10 +192,11 @@ class OperationHost {
      * @returns {Promise<{ focusName: string }>}
      */
     async #create(message) {
-        const dir = this.#folderOf(message.side);
+        const folder = this.#folderOf(message.side, message.contextTarget);
+        const dir = message.contextTarget ? path.dirname(folder) : folder;
         const name = String(message.name ?? '');
         OperationHost.#requireValidName(name);
-        const target = path.join(dir, name);
+        const target = path.join(folder, name);
         try {
             if (message.kind === 'folder') {
                 await fs.promises.mkdir(target);
@@ -213,8 +217,10 @@ class OperationHost {
      * @returns {Promise<{ focusName: string }>}
      */
     async #rename(message) {
-        const dir = this.#folderOf(message.side);
-        const oldName = OperationHost.#requireEntryName(message.oldName);
+        const folder = this.#folderOf(message.side, message.contextTarget);
+        const dir = message.contextTarget ? path.dirname(folder) : folder;
+        const oldName = message.contextTarget ? path.basename(folder)
+            : OperationHost.#requireEntryName(message.oldName);
         const newName = String(message.newName ?? '');
         if (newName === oldName) {
             return { focusName: oldName };
@@ -245,8 +251,10 @@ class OperationHost {
      */
     async #startCopy(message) {
         this.#requireIdle();
-        const dir = this.#folderOf(message.side);
-        const names = OperationHost.#requireEntryNames(message.names);
+        const folder = this.#folderOf(message.side, message.contextTarget);
+        const dir = message.contextTarget ? path.dirname(folder) : folder;
+        const names = message.contextTarget ? [path.basename(folder) || '.']
+            : OperationHost.#requireEntryNames(message.names);
         const move = message.move === true;
         const items = await CopyOperation.planItems(
             dir,
@@ -272,8 +280,10 @@ class OperationHost {
      */
     async #startDelete(message) {
         this.#requireIdle();
-        const dir = this.#folderOf(message.side);
-        const names = OperationHost.#requireEntryNames(message.names);
+        const folder = this.#folderOf(message.side, message.contextTarget);
+        const dir = message.contextTarget ? path.dirname(folder) : folder;
+        const names = message.contextTarget ? [path.basename(folder) || '.']
+            : OperationHost.#requireEntryNames(message.names);
         const toTrash = message.permanent !== true;
         if (toTrash && !DeleteOperation.trashAvailable) {
             throw new Error(I18n.t('error.noTrash'));
@@ -296,8 +306,10 @@ class OperationHost {
      */
     async #startAttributes(message) {
         this.#requireIdle();
-        const dir = this.#folderOf(message.side);
-        const names = OperationHost.#requireEntryNames(message.names);
+        const folder = this.#folderOf(message.side, message.contextTarget);
+        const dir = message.contextTarget ? path.dirname(folder) : folder;
+        const names = message.contextTarget ? [path.basename(folder) || '.']
+            : OperationHost.#requireEntryNames(message.names);
         const allowedBits = this.#windowsShell ? OperationHost.#WINDOWS_BITS : OperationHost.#POSIX_BITS;
         const change = OperationHost.#requireBitChange(message.change, allowedBits);
         const windows = this.#windowsShell ? change : null;
@@ -365,8 +377,10 @@ class OperationHost {
      */
     async #startPack(message) {
         this.#requireIdle();
-        const dir = this.#folderOf(message.side);
-        const names = OperationHost.#requireEntryNames(message.names);
+        const folder = this.#folderOf(message.side, message.contextTarget);
+        const dir = message.contextTarget ? path.dirname(folder) : folder;
+        const names = message.contextTarget ? [path.basename(folder) || '.']
+            : OperationHost.#requireEntryNames(message.names);
         const format = message.format;
         if (format !== 'zip' && format !== 'tgz' && format !== 'tar') {
             throw new Error(I18n.t('error.unknownFormat'));
@@ -406,8 +420,11 @@ class OperationHost {
      */
     async #startTest(message) {
         this.#requireIdle();
-        const dir = this.#folderOf(message.side);
-        const names = OperationHost.#requireArchiveNames(message.names);
+        const archive = message.type === 'testCurrentArchive'
+            && (message.side === 'left' || message.side === 'right')
+            ? this.#sessions()[message.side === 'left' ? 'left' : 'right'].archivePath : null;
+        const dir = archive ? path.dirname(archive) : this.#folderOf(message.side);
+        const names = archive ? [path.basename(archive)] : OperationHost.#requireArchiveNames(message.names);
         const cancellation = { cancelled: false };
         this.#runInBackground(I18n.t('operation.test'), cancellation, async () => {
             const summary = OperationHost.#emptySummary();
@@ -559,9 +576,10 @@ class OperationHost {
 
     /**
      * @param {unknown} side
+     * @param {unknown} [target]
      * @returns {string}
      */
-    #folderOf(side) {
+    #folderOf(side, target) {
         if (side !== 'left' && side !== 'right') {
             throw new Error(I18n.t('error.unknownPanel'));
         }
@@ -573,7 +591,10 @@ class OperationHost {
         if (dir === null || dir === '') {
             throw new Error(I18n.t('error.driveList'));
         }
-        return dir;
+        if (target !== undefined && target !== 'current' && target !== 'parent') {
+            throw new Error(I18n.t('error.invalidName'));
+        }
+        return target === 'parent' ? path.dirname(dir) : dir;
     }
 
     /**

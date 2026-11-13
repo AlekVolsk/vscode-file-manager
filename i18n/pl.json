@@ -158,7 +158,8 @@
     "help.key.f9": "Atrybuty",
     "help.key.insert": "Zaznacz lub odznacz, kursor w dół",
     "help.key.move": "Przesuń kursor",
-    "help.key.scale": "Skaluj tabele",
+    "help.key.refresh": "Odśwież panel",
+    "help.key.scale": "Skaluj panele",
     "help.key.shiftF4": "Nowy plik",
     "help.key.shiftF8": "Usuń trwale",
     "help.key.space": "Zaznacz lub odznacz; na folderze policz jego rozmiar",
@@ -287,5 +288,9 @@
     "type.linkToFolder": "Dowiązanie do folderu",
     "type.special": "Plik specjalny (urządzenie, gniazdo lub potok)",
     "unpack.chooseArchives": "Wybierz archiwa zip, tar lub tar.gz do rozpakowania.",
-    "unpack.intoSubfolder": "Do podfolderu o nazwie archiwum"
+    "unpack.intoSubfolder": "Do podfolderu o nazwie archiwum",
+    "context.selected": "Wybrano: {count}",
+    "context.copyName": "Kopiuj nazwę",
+    "context.copyRelativePath": "Kopiuj ścieżkę względem obszaru roboczego",
+    "context.copyFullPath": "Kopiuj pełną ścieżkę"
 }

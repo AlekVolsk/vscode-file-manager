@@ -368,6 +368,42 @@ class PanelView {
     }
 
     /**
+     * @param {HTMLElement} target
+     * @param {boolean} keyboard
+     * @returns {{ kind: 'entry' | 'current' | 'parent', names: string[], entries: Entry[], path: string } | null}
+     */
+    contextTarget(target, keyboard) {
+        if (this.#path === null || this.#path === '') {
+            return null;
+        }
+        const index = keyboard ? this.#cursor : this.#rowIndexOf(target);
+        const row = index === null ? null : this.#rows[index];
+        const kind = row ? (row.isParent ? 'parent' : 'entry') : 'current';
+        if (row && index !== null) {
+            if (!this.#selected.has(row.name)) {
+                this.#clearSelection();
+                if (!row.isParent) {
+                    this.#selected.add(row.name);
+                }
+            }
+            this.#moveCursor(index);
+        } else {
+            this.#clearSelection();
+        }
+        this.#renderRows();
+        const names = kind === 'entry' ? this.#rows.filter((item) => this.#selected.has(item.name))
+            .map((item) => item.name) : [];
+        const entries = this.#rows.filter((item) => names.includes(item.name) && item.entry)
+            .map((item) => /** @type {Entry} */ (item.entry));
+        return { kind, names, entries, path: kind === 'parent' ? this.#parent ?? this.#path : this.#path };
+    }
+
+    /** @returns {boolean} */
+    get inArchive() {
+        return this.#inArchive;
+    }
+
+    /**
      * Whether file operations make sense here: a folder is open, not the drive list.
      * @returns {boolean}
      */
@@ -1470,13 +1506,18 @@ class PanelView {
         this.#renderStatus();
     }
 
+    resetFolderSizes() {
+        this.#folderSizes.clear();
+        this.#rebuildRows(this.#currentName(), this.#cursor);
+    }
+
     #toggleSelectionAndCount() {
         const row = this.#rows[this.#cursor];
         if (!row) {
             return;
         }
         this.#toggleSelection(this.#cursor);
-        if (row.isDir && !row.isParent && !row.entry?.drive) {
+        if (this.#selected.has(row.name) && row.isDir && !row.isParent && !row.entry?.drive) {
             this.#callbacks.countFolderSizes([row.name]);
         }
     }

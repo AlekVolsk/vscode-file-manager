@@ -158,7 +158,8 @@
     "help.key.f9": "属性",
     "help.key.insert": "選択または選択解除し、カーソルを下へ",
     "help.key.move": "カーソルの移動",
-    "help.key.scale": "表の拡大縮小",
+    "help.key.refresh": "パネルを更新",
+    "help.key.scale": "パネルの拡大縮小",
     "help.key.shiftF4": "新しいファイル",
     "help.key.shiftF8": "完全に削除",
     "help.key.space": "選択または選択解除。フォルダーではサイズを集計",
@@ -287,5 +288,9 @@
     "type.linkToFolder": "フォルダーへのリンク",
     "type.special": "特殊ファイル (デバイス、ソケット、パイプ)",
     "unpack.chooseArchives": "展開する zip、tar、tar.gz アーカイブを選んでください。",
-    "unpack.intoSubfolder": "アーカイブ名のサブフォルダーへ"
+    "unpack.intoSubfolder": "アーカイブ名のサブフォルダーへ",
+    "context.selected": "選択数: {count}",
+    "context.copyName": "名前をコピー",
+    "context.copyRelativePath": "ワークスペースの相対パスをコピー",
+    "context.copyFullPath": "フルパスをコピー"
 }

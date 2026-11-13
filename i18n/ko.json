@@ -158,7 +158,8 @@
     "help.key.f9": "특성",
     "help.key.insert": "선택 또는 선택 해제 후 커서 아래로",
     "help.key.move": "커서 이동",
-    "help.key.scale": "표 크기 조정",
+    "help.key.refresh": "패널 새로 고침",
+    "help.key.scale": "패널 크기 조정",
     "help.key.shiftF4": "새 파일",
     "help.key.shiftF8": "영구 삭제",
     "help.key.space": "선택 또는 선택 해제. 폴더에서는 크기 계산",
@@ -287,5 +288,9 @@
     "type.linkToFolder": "폴더 링크",
     "type.special": "특수 파일 (장치, 소켓 또는 파이프)",
     "unpack.chooseArchives": "압축을 풀 zip, tar 또는 tar.gz 아카이브를 선택하세요.",
-    "unpack.intoSubfolder": "아카이브 이름의 하위 폴더로"
+    "unpack.intoSubfolder": "아카이브 이름의 하위 폴더로",
+    "context.selected": "선택됨: {count}",
+    "context.copyName": "이름 복사",
+    "context.copyRelativePath": "작업 영역 기준 상대 경로 복사",
+    "context.copyFullPath": "전체 경로 복사"
 }

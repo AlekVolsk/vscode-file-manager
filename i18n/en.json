@@ -158,7 +158,8 @@
     "help.key.f9": "Attributes",
     "help.key.insert": "Select or unselect, cursor down",
     "help.key.move": "Move the cursor",
-    "help.key.scale": "Scale the tables",
+    "help.key.refresh": "Refresh the panel",
+    "help.key.scale": "Scale the panels",
     "help.key.shiftF4": "New file",
     "help.key.shiftF8": "Delete permanently",
     "help.key.space": "Select or unselect; on a folder, count its size",
@@ -287,5 +288,9 @@
     "type.linkToFolder": "Link to a folder",
     "type.special": "Special file (device, socket or pipe)",
     "unpack.chooseArchives": "Choose zip, tar or tar.gz archives to unpack.",
-    "unpack.intoSubfolder": "Into a subfolder named after the archive"
+    "unpack.intoSubfolder": "Into a subfolder named after the archive",
+    "context.selected": "Selected: {count}",
+    "context.copyName": "Copy name",
+    "context.copyRelativePath": "Copy workspace-relative path",
+    "context.copyFullPath": "Copy full path"
 }

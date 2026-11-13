@@ -40,7 +40,7 @@ class PanelSession {
     #navigation = 0;
     /** @type {string[]} */
     #sizeQueue = [];
-    /** @type {{ cancelled: boolean } | null} */
+    /** @type {{ cancelled: boolean, name: string } | null} */
     #sizeCancellation = null;
 
     /**
@@ -75,6 +75,11 @@ class PanelSession {
      */
     get isInArchive() {
         return this.#archive !== null;
+    }
+
+    /** @returns {string | null} */
+    get archivePath() {
+        return this.#archive?.file ?? null;
     }
 
     /**
@@ -231,16 +236,26 @@ class PanelSession {
             return;
         }
         const wasIdle = this.#sizeQueue.length === 0 && this.#sizeCancellation === null;
-        this.#sizeQueue.push(...names.filter((name) => !this.#sizeQueue.includes(name)));
+        for (const name of names) {
+            if (name !== this.#sizeCancellation?.name && !this.#sizeQueue.includes(name)) {
+                this.#sizeQueue.push(name);
+            }
+        }
         if (wasIdle) {
             void this.#countQueuedSizes();
         }
     }
 
     /**
-     * Re-reads the folder at once, after an operation, without waiting for the watcher or the next poll.
+     * Re-reads the folder without waiting for the watcher or the next poll.
+     * @param {boolean} resetFolderSizes
      */
-    async refreshNow() {
+    async refreshNow(resetFolderSizes = false) {
+        if (resetFolderSizes) {
+            this.#cancelSizes();
+            this.#post({ type: 'folderSizesReset', side: this.#side });
+            this.#lastListing = '';
+        }
         await this.#refresh();
     }
 
@@ -372,14 +387,16 @@ class PanelSession {
         while (this.#sizeQueue.length > 0) {
             const name = /** @type {string} */ (this.#sizeQueue.shift());
             const dirPath = /** @type {string} */ (this.#path);
-            const cancellation = { cancelled: false };
+            const cancellation = { cancelled: false, name };
             this.#sizeCancellation = cancellation;
             /**
              * @param {import('./folderSizeCounter').FolderSize} size
              * @param {boolean} done
              */
             const report = (size, done) => {
-                this.#post({ type: 'folderSize', side: this.#side, path: dirPath, name, ...size, done });
+                if (!cancellation.cancelled) {
+                    this.#post({ type: 'folderSize', side: this.#side, path: dirPath, name, ...size, done });
+                }
             };
             const total = await FolderSizeCounter.count(
                 dirPath === '' ? `${name}\\` : path.join(dirPath, name),

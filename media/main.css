@@ -190,6 +190,19 @@ body {
     cursor: pointer;
 }
 
+.list-context-menu .menu-heading {
+    padding: 3px 12px;
+    font-weight: 700;
+    white-space: nowrap;
+    cursor: default;
+}
+
+.list-context-menu button.menu-item:focus {
+    color: var(--vscode-menu-selectionForeground, inherit);
+    background: var(--vscode-menu-selectionBackground, var(--vscode-list-hoverBackground));
+    outline: none;
+}
+
 .menu-item:disabled {
     opacity: 0.4;
     cursor: default;
@@ -528,6 +541,7 @@ body {
     color: var(--vscode-input-foreground);
     background: var(--vscode-input-background);
     border: 1px solid var(--vscode-input-border, var(--vscode-focusBorder));
+    border-radius: 3px;
     font-family: var(--vscode-editor-font-family);
     font-size: var(--table-font-size);
 }
@@ -562,6 +576,7 @@ body {
 }
 
 .dialog-button {
+    position: relative;
     padding: 4px 14px;
     color: var(--vscode-button-secondaryForeground);
     background: var(--vscode-button-secondaryBackground);
@@ -592,7 +607,6 @@ body {
 .dialog-button.danger {
     color: var(--vscode-errorForeground);
     background: var(--vscode-inputValidation-errorBackground);
-    border-color: var(--vscode-inputValidation-errorBorder, var(--vscode-errorForeground));
 }
 
 .dialog-button.danger:hover:not(:disabled) {
@@ -605,9 +619,19 @@ body {
     cursor: default;
 }
 
-.dialog-button:focus-visible {
-    outline: 1px solid var(--vscode-focusBorder);
-    outline-offset: 2px;
+.dialog-button:focus:not(:disabled),
+.dialog-button:active:not(:disabled) {
+    outline: none;
+}
+
+.dialog-button:focus:not(:disabled)::after,
+.dialog-button:active:not(:disabled)::after {
+    content: '';
+    position: absolute;
+    inset: 2px;
+    border-radius: 2px;
+    box-shadow: inset 0 0 0 1px color-mix(in srgb, currentColor 50%, transparent);
+    pointer-events: none;
 }
 
 .progress-box {

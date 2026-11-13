@@ -158,7 +158,8 @@
     "help.key.f9": "Атрибуты",
     "help.key.insert": "Выделить или снять выделение, курсор вниз",
     "help.key.move": "Перемещение курсора",
-    "help.key.scale": "Масштаб таблиц",
+    "help.key.refresh": "Обновить панель",
+    "help.key.scale": "Масштаб панелей",
     "help.key.shiftF4": "Новый файл",
     "help.key.shiftF8": "Удалить навсегда",
     "help.key.space": "Выделить или снять выделение; на папке — посчитать её размер",
@@ -287,5 +288,9 @@
     "type.linkToFolder": "Ссылка на папку",
     "type.special": "Особый файл (устройство, сокет или канал)",
     "unpack.chooseArchives": "Выберите архивы zip, tar или tar.gz для распаковки.",
-    "unpack.intoSubfolder": "В подпапку с именем архива"
+    "unpack.intoSubfolder": "В подпапку с именем архива",
+    "context.selected": "Выбрано: {count}",
+    "context.copyName": "Копировать имя",
+    "context.copyRelativePath": "Копировать путь относительно workspace",
+    "context.copyFullPath": "Копировать полный путь"
 }

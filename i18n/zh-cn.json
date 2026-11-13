@@ -158,7 +158,8 @@
     "help.key.f9": "文件属性",
     "help.key.insert": "选择或取消选择，光标下移",
     "help.key.move": "移动光标",
-    "help.key.scale": "缩放表格",
+    "help.key.refresh": "刷新面板",
+    "help.key.scale": "缩放面板",
     "help.key.shiftF4": "新建文件",
     "help.key.shiftF8": "永久删除",
     "help.key.space": "选择或取消选择；在文件夹上统计其大小",
@@ -287,5 +288,9 @@
     "type.linkToFolder": "指向文件夹的链接",
     "type.special": "特殊文件 (设备、套接字或管道)",
     "unpack.chooseArchives": "请选择要解压的 zip、tar 或 tar.gz 归档。",
-    "unpack.intoSubfolder": "解压到以归档命名的子文件夹"
+    "unpack.intoSubfolder": "解压到以归档命名的子文件夹",
+    "context.selected": "已选择：{count}",
+    "context.copyName": "复制名称",
+    "context.copyRelativePath": "复制相对于工作区的路径",
+    "context.copyFullPath": "复制完整路径"
 }

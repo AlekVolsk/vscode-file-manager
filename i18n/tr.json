@@ -158,7 +158,8 @@
     "help.key.f9": "Öznitelikler",
     "help.key.insert": "Seç veya seçimi kaldır, imleç aşağı",
     "help.key.move": "İmleci taşı",
-    "help.key.scale": "Tabloları ölçekle",
+    "help.key.refresh": "Paneli yenile",
+    "help.key.scale": "Panelleri ölçekle",
     "help.key.shiftF4": "Yeni dosya",
     "help.key.shiftF8": "Kalıcı olarak sil",
     "help.key.space": "Seç veya seçimi kaldır; klasörde boyutunu hesapla",
@@ -287,5 +288,9 @@
     "type.linkToFolder": "Klasöre bağlantı",
     "type.special": "Özel dosya (aygıt, soket veya kanal)",
     "unpack.chooseArchives": "Ayıklanacak zip, tar veya tar.gz arşivlerini seçin.",
-    "unpack.intoSubfolder": "Arşivin adını taşıyan bir alt klasöre"
+    "unpack.intoSubfolder": "Arşivin adını taşıyan bir alt klasöre",
+    "context.selected": "Seçilen: {count}",
+    "context.copyName": "Adı kopyala",
+    "context.copyRelativePath": "Çalışma alanına göre göreli yolu kopyala",
+    "context.copyFullPath": "Tam yolu kopyala"
 }

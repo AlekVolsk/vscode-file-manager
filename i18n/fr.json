@@ -158,7 +158,8 @@
     "help.key.f9": "Attributs",
     "help.key.insert": "Sélectionner ou désélectionner, curseur vers le bas",
     "help.key.move": "Déplacer le curseur",
-    "help.key.scale": "Mettre les tableaux à l’échelle",
+    "help.key.refresh": "Actualiser le panneau",
+    "help.key.scale": "Mettre les panneaux à l’échelle",
     "help.key.shiftF4": "Nouveau fichier",
     "help.key.shiftF8": "Supprimer définitivement",
     "help.key.space": "Sélectionner ou désélectionner ; sur un dossier, calculer sa taille",
@@ -287,5 +288,9 @@
     "type.linkToFolder": "Lien vers un dossier",
     "type.special": "Fichier spécial (périphérique, socket ou tube)",
     "unpack.chooseArchives": "Choisissez des archives zip, tar ou tar.gz à extraire.",
-    "unpack.intoSubfolder": "Dans un sous-dossier portant le nom de l’archive"
+    "unpack.intoSubfolder": "Dans un sous-dossier portant le nom de l’archive",
+    "context.selected": "Sélection : {count}",
+    "context.copyName": "Copier le nom",
+    "context.copyRelativePath": "Copier le chemin relatif à l’espace de travail",
+    "context.copyFullPath": "Copier le chemin complet"
 }

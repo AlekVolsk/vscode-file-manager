@@ -158,7 +158,8 @@
     "help.key.f9": "Atributy",
     "help.key.insert": "Vybrat nebo zrušit výběr, kurzor dolů",
     "help.key.move": "Posun kurzoru",
-    "help.key.scale": "Měřítko tabulek",
+    "help.key.refresh": "Obnovit panel",
+    "help.key.scale": "Měřítko panelů",
     "help.key.shiftF4": "Nový soubor",
     "help.key.shiftF8": "Trvale odstranit",
     "help.key.space": "Vybrat nebo zrušit výběr; u složky spočítat její velikost",
@@ -287,5 +288,9 @@
     "type.linkToFolder": "Odkaz na složku",
     "type.special": "Zvláštní soubor (zařízení, soket nebo roura)",
     "unpack.chooseArchives": "Vyberte archivy zip, tar nebo tar.gz k rozbalení.",
-    "unpack.intoSubfolder": "Do podsložky s názvem archivu"
+    "unpack.intoSubfolder": "Do podsložky s názvem archivu",
+    "context.selected": "Vybráno: {count}",
+    "context.copyName": "Kopírovat název",
+    "context.copyRelativePath": "Kopírovat cestu relativní k pracovnímu prostoru",
+    "context.copyFullPath": "Kopírovat úplnou cestu"
 }

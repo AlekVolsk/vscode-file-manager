@@ -1,6 +1,6 @@
 # File Manager
 
-A two-panel file manager in an editor tab, in the spirit of Total Commander and Midnight Commander: copy, move, rename, delete, attributes, properties and archives, by toolbar, keys and drag and drop.
+A two-panel file manager in an editor tab, in the spirit of Total Commander and Midnight Commander: copy, move, rename, delete, attributes, properties and archives, by toolbar, context menu, keys and drag and drop.
 
 > This extension was created and is maintained with the help of AI tools.
 
@@ -32,7 +32,7 @@ A new tab opens both panels in the folder chosen by the `fileManager.startFolder
 - Click a column header to sort by it, again to reverse. Folders always come first.
 - Sizes are shown in KB, MB, GB with two decimals; the `KB` button in the header switches to bytes. A folder shows `<dir>` until its size is counted.
 - The extension and size columns fit their longest value in the folder. Drag a divider in the header to set a width by hand; double-click it to go back to the automatic width.
-- Ctrl+mouse wheel scales the tables, as in the editor; the scale is kept in the `fileManager.tableScale` setting.
+- Ctrl+mouse wheel scales the panels, as in the editor; the scale is kept in the `fileManager.tableScale` setting.
 - Drag the line between the panels to resize them; double-click it for equal halves.
 - The path above the list is clickable: a click on a part of it opens that folder, a click after it lets you type a path (relative, `~` and paths to files work).
 - The list follows changes on disk while it is open. Folders on file systems that report no changes (WSL `/mnt/c`, network shares, FUSE) are polled.
@@ -57,6 +57,14 @@ Buttons that do not fit a narrow panel go, from the end, into the `⋯` menu nex
 
 An operation works on the selected entries, or on the entry under the cursor when nothing is selected. Copy and move go to the folder of the other panel.
 
+## Context menu
+
+Right-click an entry or use the keyboard context-menu key on the cursor row. Right-clicking a selected entry keeps the group; right-clicking another entry makes it the target. On empty space, applicable actions target the current folder; on `..`, they target the parent folder.
+
+The menu offers file operations, archive actions, creation, attributes and properties where applicable. Copy names or full paths to the clipboard, one per line for a selection; relative paths are available inside a workspace folder. Properties support a selection; attributes are available for a single target. Hold Shift when choosing Delete to request permanent deletion.
+
+Use arrow keys to choose an action, Enter to run it and Escape to close the menu.
+
 ## Keys
 
 The function keys work while a File Manager tab is active; elsewhere VS Code keeps its own. On macOS ⌘ takes the place of Ctrl everywhere in the File Manager, including Ctrl+click and Ctrl at a drop, and the tooltips and the help write the keys with the Mac symbols: ⌘U, ⇧F8, ⌥F5.
@@ -66,13 +74,14 @@ The function keys work while a File Manager tab is active; elsewhere VS Code kee
 - `Enter`, double-click — open a folder or an archive; a file opens in an editor tab
 - `Backspace` — parent folder
 - `Insert` — select or unselect, cursor down
-- `Space` — select or unselect; on a folder, count its size
+- `Space` — select or unselect; selecting a folder starts counting its size unless already running or queued
 - `Ctrl+Enter` — paste the name of the entry into the active terminal
 - `Ctrl+Shift+Enter` — paste its path from the project folder into the active terminal
 - `Ctrl+Alt+Enter` — paste its absolute path into the active terminal
 - `Alt+Shift+Enter` — count the size of every folder
 - `Esc` — stop counting
 - `Ctrl+U` — swap the panels
+- `Ctrl+R` — refresh the focused file list if automatic updates stall; cancels counting and resets folder sizes
 - `F1` — help: keys, mouse, toolbar
 - `F2` — rename
 - `F3` — properties
@@ -92,7 +101,7 @@ The function keys work while a File Manager tab is active; elsewhere VS Code kee
 
 - Click on an icon, or Ctrl+click — select or unselect one entry.
 - Shift+click — select a range; Ctrl+Shift+click adds it to the selection.
-- Right-click opens VS Code's Cut, Copy and Paste menu only in text fields; elsewhere in the File Manager it does nothing.
+- Right-click in a file list opens its context menu. Text fields keep VS Code's Cut, Copy and Paste menu.
 - Click on a row — cursor there, selection cleared.
 - Ctrl+double-click, with Shift or Alt — the same as Ctrl+Enter, Ctrl+Shift+Enter and Ctrl+Alt+Enter. Each of the two clicks is still a Ctrl+click and does what it does.
 

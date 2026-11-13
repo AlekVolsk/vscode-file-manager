@@ -4,6 +4,7 @@
 const fs = require('fs');
 const path = require('path');
 const vscode = require('vscode');
+const { NameValidator } = require('./nameValidator');
 const { ArchiveCatalog } = require('./archiveCatalog');
 const { Common } = require('./common');
 const { Config } = require('./config');
@@ -274,6 +275,12 @@ class FileManagerPanel {
                     this.#writeHistory(this.#identity(side), []);
                 }
                 return;
+            case 'panelFocus':
+                await vscode.commands.executeCommand('setContext', 'fileManager.panelFocused', message.focused === true);
+                break;
+            case 'refresh':
+                await session?.refreshNow(true);
+                break;
             case 'navigate':
                 if (session && typeof message.path === 'string') {
                     const focusName = typeof message.focusName === 'string' ? message.focusName : null;
@@ -284,6 +291,27 @@ class FileManagerPanel {
             case 'openFile':
                 if (session && typeof message.name === 'string') {
                     await this.#openFile(session, message.name, message.asFile === true);
+                }
+                break;
+            case 'copyContextText':
+                if (typeof message.text === 'string') {
+                    await vscode.env.clipboard.writeText(message.text);
+                }
+                break;
+            case 'revealContext':
+                if (session?.path && !session.isInArchive && FileManagerPanel.#canRevealInOs()) {
+                    const dir = session.path;
+                    if (!message.contextTarget && (typeof message.names?.[0] !== 'string'
+                        || NameValidator.problemOf(message.names[0]))) {
+                        break;
+                    }
+                    const target = message.contextTarget === 'parent' ? path.dirname(dir)
+                        : message.contextTarget === 'current' ? dir
+                        : path.join(dir, String(message.names?.[0] ?? ''));
+                    await vscode.commands.executeCommand(
+                        vscode.env.remoteName === 'wsl' ? 'remote-wsl.revealInExplorer' : 'revealFileInOS',
+                        vscode.Uri.file(target),
+                    );
                 }
                 break;
             case 'pasteToTerminal':
